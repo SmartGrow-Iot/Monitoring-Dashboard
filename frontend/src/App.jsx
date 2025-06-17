@@ -11,6 +11,9 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Profile from './pages/Profile';
+import PlantInformation from './pages/PlantInformation';
+import PromotionalMaterials from './components/dashboard/PromotionalMaterials';
+
 
 // Create auth context
 export const AuthContext = createContext({
@@ -110,11 +113,29 @@ function App() {
             }
           />
           <Route
+          path="/resources"
+          element={
+            <AppLayout>
+              <PromotionalMaterials />
+            </AppLayout>
+          }
+        />
+          <Route
             path="/history"
             element={
               <ProtectedRoute>
                 <AppLayout>
                   <HistoricalData />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/plantinformation"
+               element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                   <PlantInformation />
                 </AppLayout>
               </ProtectedRoute>
             }

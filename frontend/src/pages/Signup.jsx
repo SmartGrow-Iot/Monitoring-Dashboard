@@ -2,23 +2,55 @@ import React, { useState, useContext } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { Leaf, UserPlus } from 'lucide-react';
 import { AuthContext } from '../App';
+import { auth, db } from '../firebase';  
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';  
+import { collection, addDoc } from 'firebase/firestore';  
 
 const Signup = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState(null);  
+  const [successMsg, setSuccessMsg] = useState(null);  
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated } = useContext(AuthContext);
 
-  // If already authenticated, redirect to dashboard
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    login(email, password); // In a real app, this would be a signup API call
-    navigate('/dashboard');
+    setError(null);
+    setSuccessMsg(null);
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      await updateProfile(user, { displayName: name });
+
+      await addDoc(collection(db, "User"), {
+        userId: user.uid,
+        name: name,
+        email: email,
+        createdAt: new Date()
+      });
+
+      // Send email verification
+      await sendEmailVerification(user);
+
+      setSuccessMsg("Account created! A verification email has been sent to your email address. Please verify your email before logging in.");
+      
+      // Optionally: navigate to login or dashboard after a delay
+      setTimeout(() => {
+        navigate('/login');
+      }, 5000);
+
+    } catch (err) {
+      console.error("Signup error:", err);
+      setError(err.message);
+    }
   };
 
   return (
@@ -53,6 +85,18 @@ const Signup = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow-md sm:rounded-lg sm:px-10">
+          {error && (
+            <div className="mb-4 text-sm text-red-600">
+              {error}
+            </div>
+          )}
+
+          {successMsg && (
+            <div className="mb-4 text-sm text-green-600">
+              {successMsg}
+            </div>
+          )}
+
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-neutral-700">
@@ -165,3 +209,4 @@ const Signup = () => {
 };
 
 export default Signup;
+

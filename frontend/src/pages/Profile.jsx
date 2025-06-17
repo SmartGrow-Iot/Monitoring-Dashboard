@@ -1,23 +1,59 @@
-import React, { useState, useContext } from 'react';
-import { User, Mail, Camera, Save } from 'lucide-react';
+import React, { useState, useEffect, useContext } from 'react';
+import { User, Camera, Save } from 'lucide-react';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import { AuthContext } from '../App';
 
 const Profile = () => {
-  const { user, updateUser } = useContext(AuthContext);
+  const { user } = useContext(AuthContext); // assume user has uid
   const [formData, setFormData] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    bio: user?.bio || '',
-    notifications: user?.notifications || {
-      email: true,
-      push: true
-    }
+    name: '',
+    email: '',
+    bio: '',
+    notifications: { email: true, push: true },
   });
+  const [loading, setLoading] = useState(true);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    updateUser({ ...user, ...formData });
+  useEffect(() => {
+    if (user?.uid) {
+      const fetchData = async () => {
+        const ref = doc(db, 'users', user.uid);
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          setFormData(snap.data());
+        } else {
+          // Optional: Set default data in Firestore on first visit
+          await setDoc(ref, formData);
+        }
+        setLoading(false);
+      };
+      fetchData();
+    }
+  }, [user]);
+
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
+
+  const handleNotificationChange = (type, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      notifications: { ...prev.notifications, [type]: value },
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (user?.uid) {
+      const ref = doc(db, 'users', user.uid);
+      await setDoc(ref, formData, { merge: true });
+      alert('Profile updated successfully!');
+    }
+  };
+
+  if (loading) {
+    return <p className="text-center">Loading profile...</p>;
+  }
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -53,10 +89,10 @@ const Profile = () => {
               Full Name
             </label>
             <input
-              type="text"
               id="name"
+              type="text"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) => handleChange('name', e.target.value)}
               className="mt-1 block w-full rounded-md border border-neutral-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary sm:text-sm"
             />
           </div>
@@ -67,10 +103,10 @@ const Profile = () => {
               Email Address
             </label>
             <input
-              type="email"
               id="email"
+              type="email"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) => handleChange('email', e.target.value)}
               className="mt-1 block w-full rounded-md border border-neutral-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary sm:text-sm"
             />
           </div>
@@ -84,13 +120,13 @@ const Profile = () => {
               id="bio"
               rows={4}
               value={formData.bio}
-              onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+              onChange={(e) => handleChange('bio', e.target.value)}
               className="mt-1 block w-full rounded-md border border-neutral-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary sm:text-sm"
               placeholder="Tell us about yourself..."
             />
           </div>
 
-          {/* Notification Preferences */}
+          {/* Notifications */}
           <div>
             <h3 className="text-sm font-medium text-neutral-700 mb-3">Notification Preferences</h3>
             <div className="space-y-3">
@@ -98,10 +134,7 @@ const Profile = () => {
                 <input
                   type="checkbox"
                   checked={formData.notifications.email}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    notifications: { ...formData.notifications, email: e.target.checked }
-                  })}
+                  onChange={(e) => handleNotificationChange('email', e.target.checked)}
                   className="rounded border-neutral-300 text-primary focus:ring-primary"
                 />
                 <span className="ml-2 text-sm text-neutral-700">Email Notifications</span>
@@ -110,10 +143,7 @@ const Profile = () => {
                 <input
                   type="checkbox"
                   checked={formData.notifications.push}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    notifications: { ...formData.notifications, push: e.target.checked }
-                  })}
+                  onChange={(e) => handleNotificationChange('push', e.target.checked)}
                   className="rounded border-neutral-300 text-primary focus:ring-primary"
                 />
                 <span className="ml-2 text-sm text-neutral-700">Push Notifications</span>
@@ -121,7 +151,6 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Submit Button */}
           <div className="flex justify-end">
             <button
               type="submit"

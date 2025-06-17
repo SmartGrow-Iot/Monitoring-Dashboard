@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Plane as Plant, Droplets, LineChart, Bell, Leaf } from 'lucide-react';
+import VideoTeaser from '../components/home/VideoTeaser';
 
 const Home = () => {
   return (
@@ -56,6 +57,9 @@ const Home = () => {
           </div>
         </div>
       </div>
+
+      {/* Video Teaser Section */}
+      <VideoTeaser />
 
       {/* Features */}
       <div id="features" className="py-24 bg-white">
