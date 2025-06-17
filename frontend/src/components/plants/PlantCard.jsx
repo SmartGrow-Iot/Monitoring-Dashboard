@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
-import { Droplets, ThermometerSun, Sun, CloudDrizzle } from 'lucide-react';
+import React, { useState, useContext } from 'react';
+import { Droplets, ThermometerSun, Sun, Fan, CloudDrizzle } from 'lucide-react';
 import SensorReading from '../ui/SensorReading';
 import Toggle from '../ui/Toggle';
+import api from '../../api/api'; // Adjust path if needed
+import { AuthContext } from '../../App'; // Adjust path if needed
 
 const PlantCard = ({ plant, onEditThreshold }) => {
+  const { user } = useContext(AuthContext);
   const [pumpActive, setPumpActive] = useState(false);
   const [lightsActive, setLightsActive] = useState(false);
+  const [fanActive, setFanActive] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
   const getStatusColor = (status) => {
@@ -30,14 +34,119 @@ const PlantCard = ({ plant, onEditThreshold }) => {
     }
   };
 
-  const handlePumpToggle = () => {
+  const handlePumpToggle = async () => {
     setPumpActive(!pumpActive);
-    // Trigger API call in real implementation
+
+    try {
+      // 1. Get actuators for the plant's zone
+      const actuatorsRes = await api.get(`/actuators/zone/${plant.zone}`);
+      const actuators = actuatorsRes.data?.actuators || [];
+
+      // 2. Find the first actuator of type "watering"
+      const pumpActuator = actuators.find(a => a.type === 'watering' && a.actuatorId);
+
+      if (!pumpActuator) {
+        alert('No pump actuator found for this zone.');
+        return;
+      }
+
+      // 3. Prepare action payload
+      const actionPayload = {
+        action: 'watering', // Toggle logic
+        actuatorId: pumpActuator.actuatorId,
+        plantId: plant.plantId,
+        amount: 5, // Set as needed
+        trigger: 'manual',
+        triggerBy: user?.email || user?.name || 'unknown',
+        timestamp: new Date().toISOString(),
+      };
+
+      // 4. Send action log
+      await api.post('/logs/action/water', actionPayload);
+      console.log('Water action logged:', actionPayload);
+
+      // Optionally: Show success message or update UI
+    } catch (err) {
+      console.log('catch block entered');
+      console.error('Error toggling pump:', err);
+      alert('Failed to toggle pump.');
+    }
   };
 
-  const handleLightsToggle = () => {
+  const handleLightsToggle = async () => {
     setLightsActive(!lightsActive);
-    // Trigger API call in real implementation
+
+    try {
+      // 1. Get actuators for the plant's zone
+      const actuatorsRes = await api.get(`/actuators/zone/${plant.zone}`);
+      const actuators = actuatorsRes.data?.actuators || [];
+
+      // 2. Find the first actuator of type "light"
+      const lightActuator = actuators.find(a => a.type === 'light' && a.actuatorId);
+
+      if (!lightActuator) {
+        alert('No light actuator found for this zone.');
+        return;
+      }
+
+      // 3. Prepare action payload
+      const actionPayload = {
+        action: lightsActive ? 'light_off' : 'light_on', // Toggle logic
+        actuatorId: lightActuator.actuatorId,
+        plantId: plant.plantId,
+        amount: 5, // Set as needed
+        trigger: 'manual',
+        triggerBy: user?.email || user?.name || 'unknown', // Use actual user info
+        timestamp: new Date().toISOString(),
+      };
+
+      // 4. Send action log
+      await api.post('/logs/action/light', actionPayload);
+      console.log('Light action logged:', actionPayload);
+
+      // Optionally: Show success message or update UI
+    } catch (err) {
+      console.log('catch block entered');
+      console.error('Error toggling lights:', err);
+      alert('Failed to toggle lights.');
+    }
+  };
+
+  const handleFanToggle = async () => {
+    setFanActive(!fanActive);
+
+    try {
+      // 1. Get actuators for the plant's zone
+      const actuatorsRes = await api.get(`/actuators/zone/${plant.zone}`);
+      const actuators = actuatorsRes.data?.actuators || [];
+
+      // 2. Find the first actuator of type "fan"
+      const fanActuator = actuators.find(a => a.type === 'fan' && a.actuatorId);
+
+      if (!fanActuator) {
+        alert('No fan actuator found for this zone.');
+        return;
+      }
+
+      // 3. Prepare action payload
+      const actionPayload = {
+        action: fanActive ? 'light_off' : 'light_on', // Toggle logic as per your API
+        actuatorId: fanActuator.actuatorId,
+        plantId: plant.plantId,
+        amount: 5, // Set as needed
+        trigger: 'manual',
+        triggerBy: user?.email || user?.name || 'unknown',
+        timestamp: new Date().toISOString(),
+      };
+
+      // 4. Send action log
+      await api.post('/logs/action/fan', actionPayload);
+      console.log('Fan action logged:', actionPayload);
+
+    } catch (err) {
+      console.error('Error toggling fan:', err);
+      alert('Failed to toggle fan.');
+    }
   };
 
   // Safe extraction of threshold values
@@ -148,6 +257,18 @@ const PlantCard = ({ plant, onEditThreshold }) => {
             checked={lightsActive} 
             onChange={handleLightsToggle}
             activeColor="bg-warning"
+          />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+          <Fan size={18} className="text-accent" />
+            <span className="text-sm font-medium">Fan</span>
+          </div>
+          <Toggle 
+            checked={fanActive} 
+            onChange={handleFanToggle}
+            activeColor="bg-blue-400"
           />
         </div>
       </div>

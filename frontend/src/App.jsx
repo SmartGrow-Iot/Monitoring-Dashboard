@@ -13,7 +13,7 @@ import Signup from './pages/Signup';
 import Profile from './pages/Profile';
 import PlantInformation from './pages/PlantInformation';
 import PromotionalMaterials from './components/dashboard/PromotionalMaterials';
-import { auth } from './firebase'; // adjust path if needed
+import { auth } from './firebase.js'; // adjust path if needed
 import { onAuthStateChanged } from 'firebase/auth';
 
 
