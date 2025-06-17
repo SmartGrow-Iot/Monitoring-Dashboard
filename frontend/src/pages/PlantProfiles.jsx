@@ -28,33 +28,33 @@ const PlantProfiles = () => {
   });
   const [plantProfiles, setPlantProfiles] = useState([]);
 
+  // 1. Define fetchAllPlantProfiles at the top level of your component
+  const fetchAllPlantProfiles = async () => {
+    let allPlantIds = [];
+    for (const zoneId of zoneIds) {
+      try {
+        const res = await api.get(`/zones/${zoneId}/plants`);
+        if (res.data && Array.isArray(res.data.plants)) {
+          allPlantIds = [...allPlantIds, ...res.data.plants.map(p => p.plantId)];
+        }
+      } catch (err) {
+        console.error(`Error fetching plants for zone ${zoneId}:`, err);
+      }
+    }
+    const profiles = [];
+    for (const plantId of allPlantIds) {
+      try {
+        const res = await api.get(`/plants/${plantId}`);
+        profiles.push(res.data);
+      } catch (err) {
+        console.error(`Error fetching plant profile for ${plantId}:`, err);
+      }
+    }
+    setPlantProfiles(profiles);
+  };
+
   // Fetch all plant profiles by zone
   useEffect(() => {
-    const fetchAllPlantProfiles = async () => {
-      let allPlantIds = [];
-      // 1. Fetch all plants for each zone
-      for (const zoneId of zoneIds) {
-        try {
-          const res = await api.get(`/zones/${zoneId}/plants`);
-          if (res.data && Array.isArray(res.data.plants)) {
-            allPlantIds = [...allPlantIds, ...res.data.plants.map(p => p.plantId)];
-          }
-        } catch (err) {
-          console.error(`Error fetching plants for zone ${zoneId}:`, err);
-        }
-      }
-      // 2. Fetch each plant's full profile
-      const profiles = [];
-      for (const plantId of allPlantIds) {
-        try {
-          const res = await api.get(`/plants/${plantId}`);
-          profiles.push(res.data);
-        } catch (err) {
-          console.error(`Error fetching plant profile for ${plantId}:`, err);
-        }
-      }
-      setPlantProfiles(profiles);
-    };
     fetchAllPlantProfiles();
   }, []);
 
@@ -75,11 +75,9 @@ const PlantProfiles = () => {
         `/plants/${editedPlant.plantId}/thresholds`,
         editedPlant.thresholds
       );
-      // Optionally refresh plantProfiles or update state here
       setIsEditModalOpen(false);
-      // Show success message if needed
+      fetchAllPlantProfiles(); // Now this is defined!
     } catch (err) {
-      // Handle error (show error message)
       console.error("Failed to update thresholds", err);
     }
   };

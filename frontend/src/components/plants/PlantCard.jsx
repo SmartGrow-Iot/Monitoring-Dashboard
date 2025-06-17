@@ -3,7 +3,7 @@ import { Droplets, ThermometerSun, Sun, CloudDrizzle } from 'lucide-react';
 import SensorReading from '../ui/SensorReading';
 import Toggle from '../ui/Toggle';
 
-const PlantCard = ({ plant }) => {
+const PlantCard = ({ plant, onEditThreshold }) => {
   const [pumpActive, setPumpActive] = useState(false);
   const [lightsActive, setLightsActive] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -40,6 +40,26 @@ const PlantCard = ({ plant }) => {
     // Trigger API call in real implementation
   };
 
+  // Safe extraction of threshold values
+  const moistureMin = plant?.thresholds?.moisture?.min;
+  const moistureMax = plant?.thresholds?.moisture?.max;
+  const temperatureMin = plant?.thresholds?.temperature?.min;
+  const temperatureMax = plant?.thresholds?.temperature?.max;
+  const lightMin = plant?.thresholds?.light?.min;
+  const lightMax = plant?.thresholds?.light?.max;
+  const humidityMin = plant?.thresholds?.humidity?.min;
+  const humidityMax = plant?.thresholds?.humidity?.max;
+
+  // Status checks
+  const isMoistureLow = moistureMin !== undefined && plant.moisture < moistureMin;
+  const isMoistureHigh = moistureMax !== undefined && plant.moisture > moistureMax;
+  const isTemperatureLow = temperatureMin !== undefined && plant.temperature < temperatureMin;
+  const isTemperatureHigh = temperatureMax !== undefined && plant.temperature > temperatureMax;
+  const isLightLow = lightMin !== undefined && plant.lightLevel < lightMin;
+  const isLightHigh = lightMax !== undefined && plant.lightLevel > lightMax;
+  const isHumidityLow = humidityMin !== undefined && plant.humidity < humidityMin;
+  const isHumidityHigh = humidityMax !== undefined && plant.humidity > humidityMax;
+
   return (
     <div className="card hover:shadow-lg transition-shadow overflow-hidden">
       <div className="relative h-48 -mx-6 -mt-6 mb-4">
@@ -73,8 +93,8 @@ const PlantCard = ({ plant }) => {
           label="Moisture"
           value={`${plant.moisture}%`}
           status={
-            plant.moisture < plant.thresholds.moisture.min ? 'low' :
-            plant.moisture > plant.thresholds.moisture.max ? 'high' : 'normal'
+            isMoistureLow ? 'low' :
+            isMoistureHigh ? 'high' : 'normal'
           }
         />
         <SensorReading 
@@ -82,8 +102,8 @@ const PlantCard = ({ plant }) => {
           label="Temp"
           value={`${plant.temperature}°C`}
           status={
-            plant.temperature < plant.thresholds.temperature.min ? 'low' :
-            plant.temperature > plant.thresholds.temperature.max ? 'high' : 'normal'
+            isTemperatureLow ? 'low' :
+            isTemperatureHigh ? 'high' : 'normal'
           }
         />
         <SensorReading 
@@ -91,8 +111,8 @@ const PlantCard = ({ plant }) => {
           label="Light"
           value={`${plant.lightLevel}%`}
           status={
-            plant.lightLevel < plant.thresholds.light.min ? 'low' :
-            plant.lightLevel > plant.thresholds.light.max ? 'high' : 'normal'
+            isLightLow ? 'low' :
+            isLightHigh ? 'high' : 'normal'
           }
         />
         <SensorReading 
@@ -100,8 +120,8 @@ const PlantCard = ({ plant }) => {
           label="Humidity"
           value={`${plant.humidity}%`}
           status={
-            plant.humidity < plant.thresholds.humidity.min ? 'low' :
-            plant.humidity > plant.thresholds.humidity.max ? 'high' : 'normal'
+            isHumidityLow ? 'low' :
+            isHumidityHigh ? 'high' : 'normal'
           }
         />
       </div>
@@ -149,19 +169,22 @@ const PlantCard = ({ plant }) => {
           <div className="grid grid-cols-2 gap-2">
             <div>
               <p className="text-neutral-500">Moisture Range:</p>
-              <p>{plant.thresholds.moisture.min}% - {plant.thresholds.moisture.max}%</p>
+              <p>{moistureMin}% - {moistureMax}%</p>
             </div>
             <div>
               <p className="text-neutral-500">Temperature Range:</p>
-              <p>{plant.thresholds.temperature.min}°C - {plant.thresholds.temperature.max}°C</p>
+              <p>{temperatureMin}°C - {temperatureMax}°C</p>
             </div>
             <div>
               <p className="text-neutral-500">Light Range:</p>
-              <p>{plant.thresholds.light.min}% - {plant.thresholds.light.max}%</p>
+              <p>{lightMin}% - {lightMax}%</p>
             </div>
           </div>
           
-          <button className="mt-2 text-primary hover:text-primary-dark font-medium">
+          <button
+            className="mt-2 text-primary hover:text-primary-dark font-medium"
+            onClick={onEditThreshold}
+          >
             Edit thresholds
           </button>
         </div>

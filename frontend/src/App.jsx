@@ -1,4 +1,4 @@
-import React, { useState, createContext, useContext } from 'react';
+import React, { useState, createContext, useContext, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
@@ -13,6 +13,8 @@ import Signup from './pages/Signup';
 import Profile from './pages/Profile';
 import PlantInformation from './pages/PlantInformation';
 import PromotionalMaterials from './components/dashboard/PromotionalMaterials';
+import { auth } from './firebase'; // adjust path if needed
+import { onAuthStateChanged } from 'firebase/auth';
 
 
 // Create auth context
@@ -84,6 +86,22 @@ function App() {
       </div>
     </div>
   );
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setIsAuthenticated(true);
+        setUser({
+          email: firebaseUser.email,
+          name: firebaseUser.displayName || firebaseUser.email.split('@')[0],
+        });
+      } else {
+        setIsAuthenticated(false);
+        setUser(null);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, user, login, logout, updateUser }}>
