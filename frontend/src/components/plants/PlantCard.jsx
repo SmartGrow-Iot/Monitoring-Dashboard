@@ -90,8 +90,8 @@ const PlantCard = ({ plant, onEditThreshold }) => {
       <div className="grid grid-cols-4 gap-4 mb-6">
         <SensorReading 
           icon={<Droplets className="text-accent" size={20} />}
-          label="Moisture"
-          value={`${plant.moisture}%`}
+          label="Soil Moisture"
+          value={`${plant.soilMoisture}%`}
           status={
             isMoistureLow ? 'low' :
             isMoistureHigh ? 'high' : 'normal'

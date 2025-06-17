@@ -7,38 +7,65 @@ import Modal from '../components/ui/Modal';
 import api from '../api/api';
 
 const zoneIds = ['zone1', 'zone2', 'zone3', 'zone4'];
+const sensorTypes = ['soilMoisture', 'temperature', 'light', 'humidity'];
 
 const Dashboard = () => {
   const [plants, setPlants] = useState([]);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editedPlant, setEditedPlant] = useState(null);
 
-  // Fetch all plant profiles by zone
+  // Fetch all plant profiles and their latest sensor readings
   useEffect(() => {
-    const fetchAllPlantProfiles = async () => {
-      let allPlantIds = [];
+    const fetchAllPlantsAndSensors = async () => {
+      let allPlants = [];
+      // 1. Fetch all plants for each zone
       for (const zoneId of zoneIds) {
         try {
           const res = await api.get(`/zones/${zoneId}/plants`);
           if (res.data && Array.isArray(res.data.plants)) {
-            allPlantIds = [...allPlantIds, ...res.data.plants.map(p => p.plantId)];
+            allPlants = [...allPlants, ...res.data.plants];
           }
         } catch (err) {
           console.error(`Error fetching plants for zone ${zoneId}:`, err);
         }
       }
+
+      // 2. For each plant, fetch profile and latest sensor readings
       const profiles = [];
-      for (const plantId of allPlantIds) {
+      for (const plant of allPlants) {
         try {
-          const res = await api.get(`/plants/${plantId}`);
-          profiles.push(res.data);
+          const res = await api.get(`/plants/${plant.plantId}`);
+          const plantProfile = res.data;
+
+          // Fetch latest sensor readings for this plant
+          const sensorData = {};
+          await Promise.all(sensorTypes.map(async (type) => {
+            try {
+              const response = await api.get(
+                `/sensors?plantId=${plant.plantId}&sensorType=${type}&limit=1`
+              );
+              sensorData[type] = response.data && response.data.length > 0
+                ? response.data[0].value
+                : null;
+            } catch (err) {
+              sensorData[type] = null;
+            }
+          }));
+
+          profiles.push({
+            ...plantProfile,
+            soilMoisture: sensorData.soilMoisture,
+            temperature: sensorData.temperature,
+            lightLevel: sensorData.light,
+            humidity: sensorData.humidity,
+          });
         } catch (err) {
-          console.error(`Error fetching plant profile for ${plantId}:`, err);
+          console.error(`Error fetching plant profile for ${plant.plantId}:`, err);
         }
       }
       setPlants(profiles);
     };
-    fetchAllPlantProfiles();
+    fetchAllPlantsAndSensors();
   }, []);
 
   // Edit threshold handlers
@@ -55,14 +82,8 @@ const Dashboard = () => {
         editedPlant.thresholds
       );
       setIsEditModalOpen(false);
-      // Refresh plants
-      setPlants((prev) =>
-        prev.map((p) =>
-          p.plantId === editedPlant.plantId
-            ? { ...p, thresholds: { ...editedPlant.thresholds } }
-            : p
-        )
-      );
+      // Refresh plants with latest sensor data and thresholds
+      window.location.reload(); // Or call fetchAllPlantsAndSensors() if you move it to top-level
     } catch (err) {
       console.error("Failed to update thresholds", err);
     }
@@ -80,7 +101,7 @@ const Dashboard = () => {
               plant={{
                 ...plant,
                 id: plant.plantId,
-                lightLevel: plant.light, // adjust if needed
+                lightLevel: plant.lightLevel,
               }}
               onEditThreshold={() => handleEditThreshold(plant)}
             />
