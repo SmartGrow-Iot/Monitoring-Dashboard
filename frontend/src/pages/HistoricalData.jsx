@@ -192,8 +192,8 @@ const HistoricalData = () => {
   const [selectedPlant, setSelectedPlant] = useState('all');
   const [selectedTimeRange, setSelectedTimeRange] = useState('day');
   const [plants, setPlants] = useState([]);
-  const zoneIds = ['zone1', 'zone2', 'zone3']; 
-  const sensorTypes = ['moisture', 'temperature', 'light', 'humidity'];
+  const zoneIds = ['zone1', 'zone2', 'zone3', 'zone4']; 
+  const sensorTypes = ['soilMoisture', "airQuality", 'temperature', 'light', 'humidity'];
   const [historicalData, setHistoricalData] = useState(mockHistoricalData);
   const plantColors = ['#1976D2', '#8BC34A', '#FF5722'];
 
@@ -223,7 +223,7 @@ const HistoricalData = () => {
           if (selectedPlant === "all") {
               Object.entries(historicalData).forEach(([plantId, plantData]) => {
                   const match = plantData.find((d) => d.time === time);
-                  ["moisture", "temperature", "light", "humidity"].forEach(
+                  ["soilMoisture", "airQuality", "temperature", "light", "humidity"].forEach(
                       (sensorType) => {
                           row[`${plantId}-${sensorType}`] = match
                               ? match[sensorType]
@@ -235,7 +235,7 @@ const HistoricalData = () => {
               const match = historicalData[selectedPlant].find(
                   (d) => d.time === time
               );
-              ["moisture", "temperature", "light", "humidity"].forEach(
+              ["soilMoisture", "airQuality", "temperature", "light", "humidity"].forEach(
                   (sensorType) => {
                       row[sensorType] = match ? match[sensorType] : null;
                   }
@@ -292,7 +292,7 @@ const HistoricalData = () => {
               for (const sensorType of sensorTypes) {
                   try {
                       const response = await api.get(
-                          `/logs/sensor-data/${plantId}?sensorType=${sensorType}`
+                          `/sensors?plantId=${plantId}&sensorType=${sensorType}`
                       );
                       const rawLogs = response.data; // assuming array of { timestamp, value }
 

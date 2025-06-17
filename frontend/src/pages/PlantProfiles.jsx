@@ -19,10 +19,10 @@ const PlantProfiles = () => {
     zone: '',
     moisturePin: '',
     thresholds: {
-      moisture: { min: 30, max: 60 },
-      temperature: { min: 20, max: 30 },
-      light: { min: 50, max: 80 },
-      humidity: { min: 40, max: 70 }
+      moisture: { min: 0, max: 0 },
+      temperature: { min: 0, max: 0 },
+      light: { min: 0, max: 0 },
+      humidity: { min: 0, max: 0 }
     },
     careNotes: ''
   });
@@ -68,11 +68,20 @@ const PlantProfiles = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleSaveEdit = (e) => {
+  const handleSaveEdit = async (e) => {
     e.preventDefault();
-    // In a real app, this would make an API call to update the plant
-    console.log('Saving edited plant:', editedPlant);
-    setIsEditModalOpen(false);
+    try {
+      await api.put(
+        `/plants/${editedPlant.plantId}/thresholds`,
+        editedPlant.thresholds
+      );
+      // Optionally refresh plantProfiles or update state here
+      setIsEditModalOpen(false);
+      // Show success message if needed
+    } catch (err) {
+      // Handle error (show error message)
+      console.error("Failed to update thresholds", err);
+    }
   };
 
   // Add Plant Modal handler with validation
@@ -111,10 +120,10 @@ const PlantProfiles = () => {
         zone: '',
         moisturePin: '',
         thresholds: {
-          moisture: { min: 30, max: 60 },
-          temperature: { min: 20, max: 30 },
-          light: { min: 50, max: 80 },
-          humidity: { min: 40, max: 70 }
+          moisture: { min: 0, max: 0 },
+          temperature: { min: 0, max: 0 },
+          light: { min: 0, max: 0 },
+          humidity: { min: 0, max: 0 }
         },
         careNotes: ''
       });
@@ -256,19 +265,35 @@ const PlantProfiles = () => {
               <div className="grid grid-cols-2 gap-4 p-4 bg-neutral-50 rounded-lg">
                 <div>
                   <p className="text-sm text-neutral-500">Moisture Range</p>
-                  <p className="font-medium">{selectedPlant.thresholds.moisture.min}% - {selectedPlant.thresholds.moisture.max}%</p>
+                  <p className="font-medium">
+                    {selectedPlant?.thresholds?.moisture
+                      ? `${selectedPlant.thresholds.moisture.min}% - ${selectedPlant.thresholds.moisture.max}%`
+                      : 'N/A'}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-neutral-500">Temperature Range</p>
-                  <p className="font-medium">{selectedPlant.thresholds.temperature.min}°C - {selectedPlant.thresholds.temperature.max}°C</p>
+                  <p className="font-medium">
+                    {selectedPlant?.thresholds?.temperature
+                      ? `${selectedPlant.thresholds.temperature.min}°C - ${selectedPlant.thresholds.temperature.max}°C`
+                      : 'N/A'}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-neutral-500">Light Range</p>
-                  <p className="font-medium">{selectedPlant.thresholds.light.min}% - {selectedPlant.thresholds.light.max}%</p>
+                  <p className="font-medium">
+                    {selectedPlant?.thresholds?.light
+                      ? `${selectedPlant.thresholds.light.min} - ${selectedPlant.thresholds.light.max}`
+                      : 'N/A'}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-neutral-500">Humidity Range</p>
-                  <p className="font-medium">{selectedPlant.thresholds.humidity.min}% - {selectedPlant.thresholds.humidity.max}%</p>
+                  <p className="font-medium">
+                    {selectedPlant?.thresholds?.humidity
+                      ? `${selectedPlant.thresholds.humidity.min}% - ${selectedPlant.thresholds.humidity.max}%`
+                      : 'N/A'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -307,44 +332,6 @@ const PlantProfiles = () => {
       >
         {editedPlant && (
           <form onSubmit={handleSaveEdit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
-                Plant Name
-              </label>
-              <input
-                type="text"
-                required
-                value={editedPlant.name}
-                onChange={(e) => setEditedPlant({ ...editedPlant, name: e.target.value })}
-                className="block w-full rounded-md border border-neutral-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
-                Image URL
-              </label>
-              <input
-                type="url"
-                required
-                value={editedPlant.image}
-                onChange={(e) => setEditedPlant({ ...editedPlant, image: e.target.value })}
-                className="block w-full rounded-md border border-neutral-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
-                Care Notes
-              </label>
-              <textarea
-                required
-                value={editedPlant.careNotes}
-                onChange={(e) => setEditedPlant({ ...editedPlant, careNotes: e.target.value })}
-                className="block w-full rounded-md border border-neutral-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                rows={3}
-              />
-            </div>
 
             <div className="space-y-3">
               <h4 className="font-medium text-neutral-900">Thresholds</h4>
@@ -357,27 +344,37 @@ const PlantProfiles = () => {
                   <div className="flex gap-2">
                     <input
                       type="number"
-                      value={editedPlant.thresholds.moisture.min}
-                      onChange={(e) => setEditedPlant({
-                        ...editedPlant,
-                        thresholds: {
-                          ...editedPlant.thresholds,
-                          moisture: { ...editedPlant.thresholds.moisture, min: Number(e.target.value) }
-                        }
-                      })}
+                      value={editedPlant?.thresholds?.moisture?.min ?? ''}
+                      onChange={e =>
+                        setEditedPlant({
+                          ...editedPlant,
+                          thresholds: {
+                            ...editedPlant.thresholds,
+                            moisture: {
+                              ...editedPlant.thresholds?.moisture,
+                              min: Number(e.target.value)
+                            }
+                          }
+                        })
+                      }
                       className="w-20 rounded-md border border-neutral-300 px-2 py-1 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                     <span className="text-neutral-500">to</span>
                     <input
                       type="number"
-                      value={editedPlant.thresholds.moisture.max}
-                      onChange={(e) => setEditedPlant({
-                        ...editedPlant,
-                        thresholds: {
-                          ...editedPlant.thresholds,
-                          moisture: { ...editedPlant.thresholds.moisture, max: Number(e.target.value) }
-                        }
-                      })}
+                      value={editedPlant?.thresholds?.moisture?.max ?? ''}
+                      onChange={e =>
+                        setEditedPlant({
+                          ...editedPlant,
+                          thresholds: {
+                            ...editedPlant.thresholds,
+                            moisture: {
+                              ...editedPlant.thresholds?.moisture,
+                              max: Number(e.target.value)
+                            }
+                          }
+                        })
+                      }
                       className="w-20 rounded-md border border-neutral-300 px-2 py-1 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
@@ -390,27 +387,37 @@ const PlantProfiles = () => {
                   <div className="flex gap-2">
                     <input
                       type="number"
-                      value={editedPlant.thresholds.temperature.min}
-                      onChange={(e) => setEditedPlant({
-                        ...editedPlant,
-                        thresholds: {
-                          ...editedPlant.thresholds,
-                          temperature: { ...editedPlant.thresholds.temperature, min: Number(e.target.value) }
-                        }
-                      })}
+                      value={editedPlant?.thresholds?.temperature?.min ?? ''}
+                      onChange={e =>
+                        setEditedPlant({
+                          ...editedPlant,
+                          thresholds: {
+                            ...editedPlant.thresholds,
+                            temperature: {
+                              ...editedPlant.thresholds?.temperature,
+                              min: Number(e.target.value)
+                            }
+                          }
+                        })
+                      }
                       className="w-20 rounded-md border border-neutral-300 px-2 py-1 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                     <span className="text-neutral-500">to</span>
                     <input
                       type="number"
-                      value={editedPlant.thresholds.temperature.max}
-                      onChange={(e) => setEditedPlant({
-                        ...editedPlant,
-                        thresholds: {
-                          ...editedPlant.thresholds,
-                          temperature: { ...editedPlant.thresholds.temperature, max: Number(e.target.value) }
-                        }
-                      })}
+                      value={editedPlant?.thresholds?.temperature?.max ?? ''}
+                      onChange={e =>
+                        setEditedPlant({
+                          ...editedPlant,
+                          thresholds: {
+                            ...editedPlant.thresholds,
+                            temperature: {
+                              ...editedPlant.thresholds?.temperature,
+                              max: Number(e.target.value)
+                            }
+                          }
+                        })
+                      }
                       className="w-20 rounded-md border border-neutral-300 px-2 py-1 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
@@ -423,27 +430,37 @@ const PlantProfiles = () => {
                   <div className="flex gap-2">
                     <input
                       type="number"
-                      value={editedPlant.thresholds.light.min}
-                      onChange={(e) => setEditedPlant({
-                        ...editedPlant,
-                        thresholds: {
-                          ...editedPlant.thresholds,
-                          light: { ...editedPlant.thresholds.light, min: Number(e.target.value) }
-                        }
-                      })}
+                      value={editedPlant?.thresholds?.light?.min ?? ''}
+                      onChange={e =>
+                        setEditedPlant({
+                          ...editedPlant,
+                          thresholds: {
+                            ...editedPlant.thresholds,
+                            light: {
+                              ...editedPlant.thresholds?.light,
+                              min: Number(e.target.value)
+                            }
+                          }
+                        })
+                      }
                       className="w-20 rounded-md border border-neutral-300 px-2 py-1 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                     <span className="text-neutral-500">to</span>
                     <input
                       type="number"
-                      value={editedPlant.thresholds.light.max}
-                      onChange={(e) => setEditedPlant({
-                        ...editedPlant,
-                        thresholds: {
-                          ...editedPlant.thresholds,
-                          light: { ...editedPlant.thresholds.light, max: Number(e.target.value) }
-                        }
-                      })}
+                      value={editedPlant?.thresholds?.light?.max ?? ''}
+                      onChange={e =>
+                        setEditedPlant({
+                          ...editedPlant,
+                          thresholds: {
+                            ...editedPlant.thresholds,
+                            light: {
+                              ...editedPlant.thresholds?.light,
+                              max: Number(e.target.value)
+                            }
+                          }
+                        })
+                      }
                       className="w-20 rounded-md border border-neutral-300 px-2 py-1 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
@@ -456,27 +473,37 @@ const PlantProfiles = () => {
                   <div className="flex gap-2">
                     <input
                       type="number"
-                      value={editedPlant.thresholds.humidity.min}
-                      onChange={(e) => setEditedPlant({
-                        ...editedPlant,
-                        thresholds: {
-                          ...editedPlant.thresholds,
-                          humidity: { ...editedPlant.thresholds.humidity, min: Number(e.target.value) }
-                        }
-                      })}
+                      value={editedPlant?.thresholds?.humidity?.min ?? ''}
+                      onChange={e =>
+                        setEditedPlant({
+                          ...editedPlant,
+                          thresholds: {
+                            ...editedPlant.thresholds,
+                            humidity: {
+                              ...editedPlant.thresholds?.humidity,
+                              min: Number(e.target.value)
+                            }
+                          }
+                        })
+                      }
                       className="w-20 rounded-md border border-neutral-300 px-2 py-1 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                     <span className="text-neutral-500">to</span>
                     <input
                       type="number"
-                      value={editedPlant.thresholds.humidity.max}
-                      onChange={(e) => setEditedPlant({
-                        ...editedPlant,
-                        thresholds: {
-                          ...editedPlant.thresholds,
-                          humidity: { ...editedPlant.thresholds.humidity, max: Number(e.target.value) }
-                        }
-                      })}
+                      value={editedPlant?.thresholds?.humidity?.max ?? ''}
+                      onChange={e =>
+                        setEditedPlant({
+                          ...editedPlant,
+                          thresholds: {
+                            ...editedPlant.thresholds,
+                            humidity: {
+                              ...editedPlant.thresholds?.humidity,
+                              max: Number(e.target.value)
+                            }
+                          }
+                        })
+                      }
                       className="w-20 rounded-md border border-neutral-300 px-2 py-1 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
@@ -534,23 +561,6 @@ const PlantProfiles = () => {
               className="block w-full rounded-md border border-neutral-300 px-3 py-2"
               placeholder="Enter image URL"
             />
-          </div>
-
-          {/* ESP32 Placeholder */}
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
-              ESP32 Device
-            </label>
-            <select
-              value={newPlant.esp32 || ''}
-              onChange={e => setNewPlant({ ...newPlant, esp32: e.target.value })}
-              className="block w-full rounded-md border border-neutral-300 px-3 py-2"
-            >
-              <option value="">Select ESP32</option>
-              {esp32List.map(esp => (
-                <option key={esp} value={esp}>{esp}</option>
-              ))}
-            </select>
           </div>
 
           {/* Zone */}
