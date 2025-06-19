@@ -2,7 +2,7 @@ import React, { useState, useContext } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { Leaf, LogIn } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext'; // adjust path if needed
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, GithubAuthProvider } from 'firebase/auth';
 import { auth } from '../firebase'; 
 
 const Login = () => {
@@ -35,6 +35,17 @@ const Login = () => {
   const handleGoogleLogin = async () => {
     setError('');
     const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleGithubLogin = async () => {
+    setError('');
+    const provider = new GithubAuthProvider();
     try {
       await signInWithPopup(auth, provider);
       navigate('/dashboard');
@@ -167,7 +178,11 @@ const Login = () => {
               >
                 Google
               </button>
-              <button className="flex w-full items-center justify-center gap-2 rounded-md border border-neutral-300 bg-white py-2 px-4 text-sm font-medium text-neutral-700 shadow-sm hover:bg-neutral-50">
+              <button
+                type="button"
+                onClick={handleGithubLogin}
+                className="flex w-full items-center justify-center gap-2 rounded-md border border-neutral-300 bg-white py-2 px-4 text-sm font-medium text-neutral-700 shadow-sm hover:bg-neutral-50"
+              >
                 GitHub
               </button>
             </div>
