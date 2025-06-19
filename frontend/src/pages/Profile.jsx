@@ -2,10 +2,10 @@ import React, { useState, useEffect, useContext } from 'react';
 import { User, Camera, Save } from 'lucide-react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { AuthContext } from '../App';
+import { AuthContext } from '../context/AuthContext'; // adjust path if needed
 
 const Profile = () => {
-  const { user } = useContext(AuthContext); // assume user has uid
+  const { user } = useContext(AuthContext);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -17,17 +17,43 @@ const Profile = () => {
   useEffect(() => {
     if (user?.uid) {
       const fetchData = async () => {
-        const ref = doc(db, 'users', user.uid);
-        const snap = await getDoc(ref);
-        if (snap.exists()) {
-          setFormData(snap.data());
-        } else {
-          // Optional: Set default data in Firestore on first visit
-          await setDoc(ref, formData);
+        try {
+          const ref = doc(db, 'users', user.uid);
+          const snap = await getDoc(ref);
+          if (snap.exists()) {
+            setFormData({
+              ...formData,
+              name: snap.data().name || user.name || '',
+              email: snap.data().email || user.email || '',
+              bio: snap.data().bio || '',
+              notifications: snap.data().notifications || { email: true, push: true },
+            });
+            console.log('Profile loaded:', snap.data());
+          } else {
+            // Use AuthContext user as fallback and create Firestore doc
+            const defaultData = {
+              name: user.name || '',
+              email: user.email || '',
+              bio: '',
+              notifications: { email: true, push: true },
+            };
+            setFormData(defaultData);
+            await setDoc(ref, defaultData);
+            console.log('New profile created:', defaultData);
+          }
+        } catch (err) {
+          setFormData({
+            name: user.name || '',
+            email: user.email || '',
+            bio: '',
+            notifications: { email: true, push: true },
+          });
         }
         setLoading(false);
       };
       fetchData();
+    } else if (user === null) {
+      setLoading(false); // Prevent infinite loading if no user
     }
   }, [user]);
 
@@ -44,10 +70,13 @@ const Profile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (user?.uid) {
+    if (!user?.uid) return;
+    try {
       const ref = doc(db, 'users', user.uid);
       await setDoc(ref, formData, { merge: true });
-      alert('Profile updated successfully!');
+      alert('Profile updated!');
+    } catch (err) {
+      alert('Failed to update profile.');
     }
   };
 
@@ -92,7 +121,7 @@ const Profile = () => {
               id="name"
               type="text"
               value={formData.name}
-              onChange={(e) => handleChange('name', e.target.value)}
+              onChange={e => setFormData({ ...formData, name: e.target.value })}
               className="mt-1 block w-full rounded-md border border-neutral-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary sm:text-sm"
             />
           </div>
@@ -105,8 +134,13 @@ const Profile = () => {
             <input
               id="email"
               type="email"
-              value={formData.email}
-              onChange={(e) => handleChange('email', e.target.value)}
+              value={
+                formData.email ||
+                user?.email ||
+                (user?.providerData && user.providerData[0]?.email) ||
+                ''
+              }
+              readOnly
               className="mt-1 block w-full rounded-md border border-neutral-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary sm:text-sm"
             />
           </div>

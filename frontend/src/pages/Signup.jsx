@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { Leaf, UserPlus } from 'lucide-react';
-import { AuthContext } from '../App';
+import { AuthContext } from '../context/AuthContext'; // adjust path if needed
 import { auth, db } from '../firebase';  
 import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';  
 import { collection, addDoc } from 'firebase/firestore';  

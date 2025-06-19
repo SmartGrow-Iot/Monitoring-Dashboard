@@ -22,7 +22,7 @@ const PlantProfiles = () => {
       moisture: { min: 0, max: 0 },
       temperature: { min: 0, max: 0 },
       light: { min: 0, max: 0 },
-      humidity: { min: 0, max: 0 }
+      airQuality: { min: 0, max: 0 } // changed from humidity
     },
     careNotes: ''
   });
@@ -95,13 +95,14 @@ const PlantProfiles = () => {
     try {
       const requestBody = {
         name: newPlant.name,
-        userId: 'demo-user',
+        userId: 'currentUserId', // Replace with actual user ID
         zone: newPlant.zone,
         moisturePin: Number(newPlant.moisturePin),
         thresholds: {
           moisture: { ...newPlant.thresholds.moisture },
           temperature: { ...newPlant.thresholds.temperature },
-          light: { ...newPlant.thresholds.light }
+          light: { ...newPlant.thresholds.light },
+          airQuality: { ...newPlant.thresholds.airQuality }
         },
         type: 'vegetable',
         description: newPlant.careNotes,
@@ -121,7 +122,7 @@ const PlantProfiles = () => {
           moisture: { min: 0, max: 0 },
           temperature: { min: 0, max: 0 },
           light: { min: 0, max: 0 },
-          humidity: { min: 0, max: 0 }
+          airQuality: { min: 0, max: 0 } // changed from humidity
         },
         careNotes: ''
       });
@@ -180,12 +181,8 @@ const PlantProfiles = () => {
                   <p>{plant.thresholds?.light?.min}% - {plant.thresholds?.light?.max}%</p>
                 </div>
                 <div>
-                  <p className="text-neutral-500">Humidity:</p>
-                  <p>
-                    {plant.thresholds?.humidity
-                      ? `${plant.thresholds.humidity.min}% - ${plant.thresholds.humidity.max}%`
-                      : 'N/A'}
-                  </p>
+                  <p className="text-neutral-500">Air Quality:</p>
+                  <p>{plant.thresholds?.airQuality?.min}% - {plant.thresholds?.airQuality?.max}%</p>
                 </div>
               </div>
             </div>
@@ -286,10 +283,10 @@ const PlantProfiles = () => {
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-neutral-500">Humidity Range</p>
+                  <p className="text-sm text-neutral-500">Air Quality Range</p>
                   <p className="font-medium">
-                    {selectedPlant?.thresholds?.humidity
-                      ? `${selectedPlant.thresholds.humidity.min}% - ${selectedPlant.thresholds.humidity.max}%`
+                    {selectedPlant?.thresholds?.airQuality
+                      ? `${selectedPlant.thresholds.airQuality.min}% - ${selectedPlant.thresholds.airQuality.max}%`
                       : 'N/A'}
                   </p>
                 </div>
@@ -466,19 +463,19 @@ const PlantProfiles = () => {
 
                 <div>
                   <label className="block text-sm text-neutral-700 mb-1">
-                    Humidity Range (%)
+                    Air Quality Range (%)
                   </label>
                   <div className="flex gap-2">
                     <input
                       type="number"
-                      value={editedPlant?.thresholds?.humidity?.min ?? ''}
+                      value={editedPlant?.thresholds?.airQuality?.min ?? ''}
                       onChange={e =>
                         setEditedPlant({
                           ...editedPlant,
                           thresholds: {
                             ...editedPlant.thresholds,
-                            humidity: {
-                              ...editedPlant.thresholds?.humidity,
+                            airQuality: {
+                              ...editedPlant.thresholds?.airQuality,
                               min: Number(e.target.value)
                             }
                           }
@@ -489,14 +486,14 @@ const PlantProfiles = () => {
                     <span className="text-neutral-500">to</span>
                     <input
                       type="number"
-                      value={editedPlant?.thresholds?.humidity?.max ?? ''}
+                      value={editedPlant?.thresholds?.airQuality?.max ?? ''}
                       onChange={e =>
                         setEditedPlant({
                           ...editedPlant,
                           thresholds: {
                             ...editedPlant.thresholds,
-                            humidity: {
-                              ...editedPlant.thresholds?.humidity,
+                            airQuality: {
+                              ...editedPlant.thresholds?.airQuality,
                               max: Number(e.target.value)
                             }
                           }
@@ -718,17 +715,17 @@ const PlantProfiles = () => {
 
               <div>
                 <label className="block text-sm text-neutral-700 mb-1">
-                  Humidity Range (%)
+                  Air Quality Range (%)
                 </label>
                 <div className="flex gap-2">
                   <input
                     type="number"
-                    value={newPlant.thresholds.humidity.min}
+                    value={newPlant.thresholds.airQuality.min}
                     onChange={(e) => setNewPlant({
                       ...newPlant,
                       thresholds: {
                         ...newPlant.thresholds,
-                        humidity: { ...newPlant.thresholds.humidity, min: Number(e.target.value) }
+                        airQuality: { ...newPlant.thresholds.airQuality, min: Number(e.target.value) }
                       }
                     })}
                     className="w-20 rounded-md border border-neutral-300 px-2 py-1 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
@@ -736,12 +733,12 @@ const PlantProfiles = () => {
                   <span className="text-neutral-500">to</span>
                   <input
                     type="number"
-                    value={newPlant.thresholds.humidity.max}
+                    value={newPlant.thresholds.airQuality.max}
                     onChange={(e) => setNewPlant({
                       ...newPlant,
                       thresholds: {
                         ...newPlant.thresholds,
-                        humidity: { ...newPlant.thresholds.humidity, max: Number(e.target.value) }
+                        airQuality: { ...newPlant.thresholds.airQuality, max: Number(e.target.value) }
                       }
                     })}
                     className="w-20 rounded-md border border-neutral-300 px-2 py-1 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"

@@ -1,8 +1,8 @@
 import React, { useState, useContext } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { Leaf, LogIn } from 'lucide-react';
-import { AuthContext } from '../App';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { AuthContext } from '../context/AuthContext'; // adjust path if needed
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../firebase'; 
 
 const Login = () => {
@@ -28,6 +28,17 @@ const Login = () => {
       navigate('/dashboard');
     } catch (err) {
       console.error('Login error:', err);
+      setError(err.message);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setError('');
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      navigate('/dashboard');
+    } catch (err) {
       setError(err.message);
     }
   };
@@ -149,7 +160,11 @@ const Login = () => {
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-3">
-              <button className="flex w-full items-center justify-center gap-2 rounded-md border border-neutral-300 bg-white py-2 px-4 text-sm font-medium text-neutral-700 shadow-sm hover:bg-neutral-50">
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                className="flex w-full items-center justify-center gap-2 rounded-md border border-neutral-300 bg-white py-2 px-4 text-sm font-medium text-neutral-700 shadow-sm hover:bg-neutral-50"
+              >
                 Google
               </button>
               <button className="flex w-full items-center justify-center gap-2 rounded-md border border-neutral-300 bg-white py-2 px-4 text-sm font-medium text-neutral-700 shadow-sm hover:bg-neutral-50">

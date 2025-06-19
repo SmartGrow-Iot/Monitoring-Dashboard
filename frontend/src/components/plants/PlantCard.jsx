@@ -3,11 +3,12 @@ import { Droplets, ThermometerSun, Sun, Fan, CloudDrizzle } from 'lucide-react';
 import SensorReading from '../ui/SensorReading';
 import Toggle from '../ui/Toggle';
 import api from '../../api/api'; // Adjust path if needed
-import { AuthContext } from '../../App'; // Adjust path if needed
+import { AuthContext } from '../../context/AuthContext'; // Adjust path if needed
 
 const PlantCard = ({ plant, onEditThreshold }) => {
   const { user } = useContext(AuthContext);
-  const [pumpActive, setPumpActive] = useState(false);
+  const [pumpAmount, setPumpAmount] = useState('');
+  const [isPumping, setIsPumping] = useState(false);
   const [lightsActive, setLightsActive] = useState(false);
   const [fanActive, setFanActive] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -34,9 +35,12 @@ const PlantCard = ({ plant, onEditThreshold }) => {
     }
   };
 
-  const handlePumpToggle = async () => {
-    setPumpActive(!pumpActive);
-
+  const handlePumpAction = async () => {
+    if (!pumpAmount || isNaN(pumpAmount) || pumpAmount <= 0) {
+      alert('Please enter a valid amount (ml).');
+      return;
+    }
+    setIsPumping(true);
     try {
       // 1. Get actuators for the plant's zone
       const actuatorsRes = await api.get(`/actuators/zone/${plant.zone}`);
@@ -47,15 +51,16 @@ const PlantCard = ({ plant, onEditThreshold }) => {
 
       if (!pumpActuator) {
         alert('No pump actuator found for this zone.');
+        setIsPumping(false);
         return;
       }
 
       // 3. Prepare action payload
       const actionPayload = {
-        action: 'watering', // Toggle logic
+        action: 'watering',
         actuatorId: pumpActuator.actuatorId,
         plantId: plant.plantId,
-        amount: 5, // Set as needed
+        amount: Number(pumpAmount),
         trigger: 'manual',
         triggerBy: user?.email || user?.name || 'unknown',
         timestamp: new Date().toISOString(),
@@ -64,13 +69,13 @@ const PlantCard = ({ plant, onEditThreshold }) => {
       // 4. Send action log
       await api.post('/logs/action/water', actionPayload);
       console.log('Water action logged:', actionPayload);
-
-      // Optionally: Show success message or update UI
+      alert('Watering action sent!');
+      setPumpAmount('');
     } catch (err) {
-      console.log('catch block entered');
-      console.error('Error toggling pump:', err);
-      alert('Failed to toggle pump.');
+      console.error('Error sending pump action:', err);
+      alert('Failed to send watering action.');
     }
+    setIsPumping(false);
   };
 
   const handleLightsToggle = async () => {
@@ -130,7 +135,7 @@ const PlantCard = ({ plant, onEditThreshold }) => {
 
       // 3. Prepare action payload
       const actionPayload = {
-        action: fanActive ? 'light_off' : 'light_on', // Toggle logic as per your API
+        action: fanActive ? 'fan_off' : 'fan_on', // Toggle logic as per your API
         actuatorId: fanActuator.actuatorId,
         plantId: plant.plantId,
         amount: 5, // Set as needed
@@ -199,7 +204,7 @@ const PlantCard = ({ plant, onEditThreshold }) => {
       <div className="grid grid-cols-4 gap-4 mb-6">
         <SensorReading 
           icon={<Droplets className="text-accent" size={20} />}
-          label="Soil Moisture"
+          label="Moisture"
           value={`${plant.soilMoisture}%`}
           status={
             isMoistureLow ? 'low' :
@@ -236,16 +241,30 @@ const PlantCard = ({ plant, onEditThreshold }) => {
       </div>
 
       <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
+        {/* Water Pump as input + button */}
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Droplets size={18} className="text-accent" />
             <span className="text-sm font-medium">Water Pump</span>
           </div>
-          <Toggle 
-            checked={pumpActive} 
-            onChange={handlePumpToggle}
-            activeColor="bg-accent"
-          />
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={1}
+              placeholder="ml"
+              value={pumpAmount}
+              onChange={e => setPumpAmount(e.target.value)}
+              className="w-20 px-2 py-1 border rounded text-sm"
+              disabled={isPumping}
+            />
+            <button
+              onClick={handlePumpAction}
+              className="btn btn-accent px-3 py-1 text-sm"
+              disabled={isPumping}
+            >
+              {isPumping ? 'Pumping...' : 'Pump'}
+            </button>
+          </div>
         </div>
         
         <div className="flex items-center justify-between">
