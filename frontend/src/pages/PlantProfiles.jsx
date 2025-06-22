@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Plane as Plant, Plus, Save } from 'lucide-react';
 import Modal from '../components/ui/Modal';
 import api from '../api/api'; // Make sure this is your axios instance
+import { AuthContext } from '../context/AuthContext';
 
 const zoneIds = ['zone1', 'zone2', 'zone3', 'zone4']; // Updated zone list
 const esp32List = ['esp32-1', 'esp32-2', 'esp32-3']; // Placeholder ESP32 devices
 const pinList = [34, 35, 36, 39]; // Updated pin list
 
 const PlantProfiles = () => {
+  const { user } = useContext(AuthContext);
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -86,7 +89,6 @@ const PlantProfiles = () => {
   const handleAddPlant = async (e) => {
     e.preventDefault();
 
-    // Simple validation
     if (!newPlant.zone || !newPlant.moisturePin) {
       alert('Please select a zone and pin.');
       return;
@@ -95,7 +97,7 @@ const PlantProfiles = () => {
     try {
       const requestBody = {
         name: newPlant.name,
-        userId: 'currentUserId', // Replace with actual user ID
+        userId: user?.uid || user?.email || 'unknown', // Use actual user info
         zone: newPlant.zone,
         moisturePin: Number(newPlant.moisturePin),
         thresholds: {
@@ -130,7 +132,7 @@ const PlantProfiles = () => {
       // (You may want to refetch or just add the new plant to state)
       setPlantProfiles(prev => [...prev, createdPlant]);
     } catch (err) {
-      alert('Error adding plant: ' + (err.response?.data?.detail || err.message));
+      alert('Error adding plant: ' + (err.response?.data?.detail || JSON.stringify(err.response?.data) || err.message));
     }
   };
 

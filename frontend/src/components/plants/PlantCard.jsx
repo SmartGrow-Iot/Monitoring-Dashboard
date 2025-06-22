@@ -1,17 +1,52 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { Droplets, ThermometerSun, Sun, Fan, CloudDrizzle } from 'lucide-react';
 import SensorReading from '../ui/SensorReading';
 import Toggle from '../ui/Toggle';
-import api from '../../api/api'; // Adjust path if needed
-import { AuthContext } from '../../context/AuthContext'; // Adjust path if needed
+import api from '../../api/api';
+import { AuthContext } from '../../context/AuthContext';
 
 const PlantCard = ({ plant, onEditThreshold }) => {
   const { user } = useContext(AuthContext);
-  const [pumpAmount, setPumpAmount] = useState('');
-  const [isPumping, setIsPumping] = useState(false);
+  const [pumpActive, setPumpActive] = useState(false);
   const [lightsActive, setLightsActive] = useState(false);
   const [fanActive, setFanActive] = useState(false);
   const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    const fetchActionLogs = async () => {
+      try {
+        const res = await api.get(`/logs/action/plant/${plant.plantId}?sortBy=latest`);
+        const logs = res.data;
+
+        // Find the latest action for each actuator type
+        // You may need to know the actuatorId/type mapping for this plant
+        // For demo, we'll use action string matching
+
+        // Water Pump
+        const latestWater = logs.find(log =>
+          log.action === 'water_on' || log.action === 'water_off'
+        );
+        if (latestWater) setPumpActive(latestWater.action === 'water_on');
+
+        // Grow Lights
+        const latestLight = logs.find(log =>
+          log.action === 'light_on' || log.action === 'light_off'
+        );
+        if (latestLight) setLightsActive(latestLight.action === 'light_on');
+
+        // Fan
+        const latestFan = logs.find(log =>
+          log.action === 'fan_on' || log.action === 'fan_off'
+        );
+        if (latestFan) setFanActive(latestFan.action === 'fan_on');
+      } catch (err) {
+        console.error('Failed to fetch action logs:', err);
+      }
+    };
+
+    fetchActionLogs();
+    // eslint-disable-next-line
+  }, [plant.plantId]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -35,58 +70,40 @@ const PlantCard = ({ plant, onEditThreshold }) => {
     }
   };
 
-  const handlePumpAction = async () => {
-    if (!pumpAmount || isNaN(pumpAmount) || pumpAmount <= 0) {
-      alert('Please enter a valid amount (ml).');
-      return;
-    }
-    setIsPumping(true);
+  const handlePumpToggle = async () => {
+    setPumpActive(!pumpActive);
     try {
-      // 1. Get actuators for the plant's zone
       const actuatorsRes = await api.get(`/actuators/zone/${plant.zone}`);
       const actuators = actuatorsRes.data?.actuators || [];
-
-      // 2. Find the first actuator of type "watering"
       const pumpActuator = actuators.find(a => a.type === 'watering' && a.actuatorId);
 
       if (!pumpActuator) {
         alert('No pump actuator found for this zone.');
-        setIsPumping(false);
         return;
       }
 
-      // 3. Prepare action payload
       const actionPayload = {
-        action: 'watering',
+        action: pumpActive ? 'water_off' : 'water_on',
         actuatorId: pumpActuator.actuatorId,
         plantId: plant.plantId,
-        amount: Number(pumpAmount),
         trigger: 'manual',
         triggerBy: user?.email || user?.name || 'unknown',
         timestamp: new Date().toISOString(),
       };
 
-      // 4. Send action log
       await api.post('/logs/action/water', actionPayload);
       console.log('Water action logged:', actionPayload);
-      alert('Watering action sent!');
-      setPumpAmount('');
     } catch (err) {
-      console.error('Error sending pump action:', err);
-      alert('Failed to send watering action.');
+      console.error('Error toggling pump:', err);
+      alert('Failed to toggle pump.');
     }
-    setIsPumping(false);
   };
 
   const handleLightsToggle = async () => {
     setLightsActive(!lightsActive);
-
     try {
-      // 1. Get actuators for the plant's zone
       const actuatorsRes = await api.get(`/actuators/zone/${plant.zone}`);
       const actuators = actuatorsRes.data?.actuators || [];
-
-      // 2. Find the first actuator of type "light"
       const lightActuator = actuators.find(a => a.type === 'light' && a.actuatorId);
 
       if (!lightActuator) {
@@ -94,24 +111,18 @@ const PlantCard = ({ plant, onEditThreshold }) => {
         return;
       }
 
-      // 3. Prepare action payload
       const actionPayload = {
-        action: lightsActive ? 'light_off' : 'light_on', // Toggle logic
+        action: lightsActive ? 'light_off' : 'light_on',
         actuatorId: lightActuator.actuatorId,
         plantId: plant.plantId,
-        amount: 5, // Set as needed
         trigger: 'manual',
-        triggerBy: user?.email || user?.name || 'unknown', // Use actual user info
+        triggerBy: user?.email || user?.name || 'unknown',
         timestamp: new Date().toISOString(),
       };
 
-      // 4. Send action log
       await api.post('/logs/action/light', actionPayload);
       console.log('Light action logged:', actionPayload);
-
-      // Optionally: Show success message or update UI
     } catch (err) {
-      console.log('catch block entered');
       console.error('Error toggling lights:', err);
       alert('Failed to toggle lights.');
     }
@@ -119,13 +130,9 @@ const PlantCard = ({ plant, onEditThreshold }) => {
 
   const handleFanToggle = async () => {
     setFanActive(!fanActive);
-
     try {
-      // 1. Get actuators for the plant's zone
       const actuatorsRes = await api.get(`/actuators/zone/${plant.zone}`);
       const actuators = actuatorsRes.data?.actuators || [];
-
-      // 2. Find the first actuator of type "fan"
       const fanActuator = actuators.find(a => a.type === 'fan' && a.actuatorId);
 
       if (!fanActuator) {
@@ -133,21 +140,17 @@ const PlantCard = ({ plant, onEditThreshold }) => {
         return;
       }
 
-      // 3. Prepare action payload
       const actionPayload = {
-        action: fanActive ? 'fan_off' : 'fan_on', // Toggle logic as per your API
+        action: fanActive ? 'fan_off' : 'fan_on',
         actuatorId: fanActuator.actuatorId,
         plantId: plant.plantId,
-        amount: 5, // Set as needed
         trigger: 'manual',
         triggerBy: user?.email || user?.name || 'unknown',
         timestamp: new Date().toISOString(),
       };
 
-      // 4. Send action log
       await api.post('/logs/action/fan', actionPayload);
       console.log('Fan action logged:', actionPayload);
-
     } catch (err) {
       console.error('Error toggling fan:', err);
       alert('Failed to toggle fan.');
@@ -205,87 +208,70 @@ const PlantCard = ({ plant, onEditThreshold }) => {
         <SensorReading 
           icon={<Droplets className="text-accent" size={20} />}
           label="Moisture"
-          value={`${plant.soilMoisture}%`}
-          status={
-            isMoistureLow ? 'low' :
-            isMoistureHigh ? 'high' : 'normal'
-          }
+          value={plant.soilMoisture !== undefined && plant.soilMoisture !== null ? `${plant.soilMoisture}%` : 'N/A'}
+          status={isMoistureLow ? 'low' : isMoistureHigh ? 'high' : 'normal'}
         />
         <SensorReading 
           icon={<ThermometerSun className="text-warning" size={20} />}
           label="Temp"
-          value={`${plant.temperature}°C`}
-          status={
-            isTemperatureLow ? 'low' :
-            isTemperatureHigh ? 'high' : 'normal'
-          }
+          value={plant.temperature !== undefined && plant.temperature !== null ? `${plant.temperature}°C` : 'N/A'}
+          status={isTemperatureLow ? 'low' : isTemperatureHigh ? 'high' : 'normal'}
         />
         <SensorReading 
           icon={<Sun className="text-warning" size={20} />}
           label="Light"
-          value={`${plant.lightLevel}%`}
-          status={
-            isLightLow ? 'low' :
-            isLightHigh ? 'high' : 'normal'
-          }
+          value={plant.lightLevel !== undefined && plant.lightLevel !== null ? `${plant.lightLevel}%` : 'N/A'}
+          status={isLightLow ? 'low' : isLightHigh ? 'high' : 'normal'}
         />
         <SensorReading 
-          icon={<CloudDrizzle className="text-blue-400" size={20} />}
+          icon={<CloudDrizzle className="text-green-500" size={20} />}
           label="Humidity"
-          value={`${plant.humidity}%`}
-          status={
-            isHumidityLow ? 'low' :
-            isHumidityHigh ? 'high' : 'normal'
-          }
+          value={plant.humidity !== undefined && plant.humidity !== null ? `${plant.humidity}%` : 'N/A'}
+          status={isHumidityLow ? 'low' : isHumidityHigh ? 'high' : 'normal'}
+        />
+        <SensorReading 
+          icon={<Fan className="text-green-500" size={20} />}
+          label="Air Quality"
+          value={plant.airQuality !== undefined && plant.airQuality !== null ? `${plant.airQuality}` : 'N/A'}
+          status="normal"
         />
       </div>
 
       <div className="flex flex-col gap-3">
-        {/* Water Pump as input + button */}
-        <div className="flex items-center justify-between gap-2">
+        {/* Water Pump as toggle */}
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Droplets size={18} className="text-accent" />
             <span className="text-sm font-medium">Water Pump</span>
           </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min={1}
-              placeholder="ml"
-              value={pumpAmount}
-              onChange={e => setPumpAmount(e.target.value)}
-              className="w-20 px-2 py-1 border rounded text-sm"
-              disabled={isPumping}
-            />
-            <button
-              onClick={handlePumpAction}
-              className="btn btn-accent px-3 py-1 text-sm"
-              disabled={isPumping}
-            >
-              {isPumping ? 'Pumping...' : 'Pump'}
-            </button>
-          </div>
+          <Toggle
+            checked={pumpActive}
+            onChange={handlePumpToggle}
+            activeColor="bg-accent"
+          />
         </div>
-        
+
+        {/* Grow Lights toggle */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sun size={18} className="text-warning" />
             <span className="text-sm font-medium">Grow Lights</span>
           </div>
-          <Toggle 
-            checked={lightsActive} 
+          <Toggle
+            checked={lightsActive}
             onChange={handleLightsToggle}
             activeColor="bg-warning"
           />
         </div>
 
+        {/* Fan toggle */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-          <Fan size={18} className="text-accent" />
+            <Fan size={18} className="text-accent" />
             <span className="text-sm font-medium">Fan</span>
           </div>
-          <Toggle 
-            checked={fanActive} 
+          <Toggle
+            checked={fanActive}
             onChange={handleFanToggle}
             activeColor="bg-blue-400"
           />

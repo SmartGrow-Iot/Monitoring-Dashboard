@@ -30,34 +30,52 @@ const Dashboard = () => {
         }
       }
 
-      // 2. For each plant, fetch profile and latest sensor readings
+      // 2. Fetch latest zone sensor logs for each zone
+      const zoneSensorData = {};
+      await Promise.all(zoneIds.map(async (zoneId) => {
+        try {
+          const res = await api.get(`/logs/sensors?zoneId=${zoneId}&limit=1`);
+          // If response is an array, get the latest record
+          const latest = Array.isArray(res.data) ? res.data[0] : res.data;
+          if (latest) zoneSensorData[zoneId] = latest;
+        } catch (err) {
+          zoneSensorData[zoneId] = null;
+        }
+      }));
+
+      // 3. For each plant, map the correct sensor readings
       const profiles = [];
       for (const plant of allPlants) {
         try {
           const res = await api.get(`/plants/${plant.plantId}`);
           const plantProfile = res.data;
+          const zoneData = zoneSensorData[plant.zone];
 
-          // Fetch latest sensor readings for this plant
-          const sensorData = {};
-          await Promise.all(sensorTypes.map(async (type) => {
-            try {
-              const response = await api.get(
-                `/sensors?plantId=${plant.plantId}&sensorType=${type}&limit=1`
+          // Default values
+          let soilMoisture = null, temperature = null, lightLevel = null, humidity = null, airQuality = null;
+
+          if (zoneData) {
+            // Map soil moisture by pin
+            if (Array.isArray(zoneData.soilMoistureByPin)) {
+              const pinData = zoneData.soilMoistureByPin.find(
+                s => String(s.pin) === String(plant.moisturePin)
               );
-              sensorData[type] = response.data && response.data.length > 0
-                ? response.data[0].value
-                : null;
-            } catch (err) {
-              sensorData[type] = null;
+              soilMoisture = pinData ? pinData.soilMoisture : null;
             }
-          }));
+            // Map other sensors
+            temperature = zoneData.zoneSensors?.temp ?? null;
+            lightLevel = zoneData.zoneSensors?.light ?? null;
+            humidity = zoneData.zoneSensors?.humidity ?? null;
+            airQuality = zoneData.zoneSensors?.airQuality ?? null;
+          }
 
           profiles.push({
             ...plantProfile,
-            soilMoisture: sensorData.soilMoisture,
-            temperature: sensorData.temperature,
-            lightLevel: sensorData.light,
-            humidity: sensorData.humidity,
+            soilMoisture,
+            temperature,
+            lightLevel,
+            humidity,
+            airQuality,
           });
         } catch (err) {
           console.error(`Error fetching plant profile for ${plant.plantId}:`, err);

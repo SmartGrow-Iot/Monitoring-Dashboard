@@ -179,11 +179,13 @@ const timeRangeOptions = [
   { id: 'month', name: '30 Days' }
 ];
 
+// Add a color for air quality
 const metricColors = {
   moisture: '#1976D2',    // blue
   temperature: '#FBC02D', // yellow
   light: '#FF9800',       // orange
-  humidity: '#F44336'     // red
+  humidity: '#F44336',    // red
+  airQuality: '#4CAF50',  // green (add this line)
 };
 
 
@@ -192,8 +194,8 @@ const HistoricalData = () => {
   const [selectedPlant, setSelectedPlant] = useState('all');
   const [selectedTimeRange, setSelectedTimeRange] = useState('day');
   const [plants, setPlants] = useState([]);
-  const zoneIds = ['zone1', 'zone2', 'zone3', 'zone4']; 
-  const sensorTypes = ['soilMoisture', "airQuality", 'temperature', 'light', 'humidity'];
+  const zoneIds = ['zone1', 'zone2', 'zone3', 'zone4'];
+  const sensorTypes = ['soilMoisture', 'temperature', 'light', 'humidity', 'airQuality'];
   const [historicalData, setHistoricalData] = useState(mockHistoricalData);
   const plantColors = ['#1976D2', '#8BC34A', '#FF5722'];
 
@@ -279,54 +281,53 @@ const HistoricalData = () => {
 
 
   const fetchHistoricalData = async (zoneIds) => {
-      const allHistoricalData = {}; // Final structured object
+    const allHistoricalData = {};
 
-      for (const zoneId of zoneIds) {
-          const zonePlants = await fetchPlantsByZoneId(zoneId);
+    for (const zoneId of zoneIds) {
+      // 1. Fetch all plants in this zone
+      const zonePlants = await fetchPlantsByZoneId(zoneId);
 
-          for (const plant of zonePlants) {
-              const plantId = plant.plantId;
-
-              const sensorDataByType = {};
-
-              for (const sensorType of sensorTypes) {
-                  try {
-                      const response = await api.get(
-                          `/sensors?plantId=${plantId}&sensorType=${sensorType}`
-                      );
-                      const rawLogs = response.data; // assuming array of { timestamp, value }
-
-                      rawLogs.forEach(({ timestamp, value }) => {
-                          const time = new Date(timestamp).toLocaleTimeString(
-                              [],
-                              { hour: "2-digit", minute: "2-digit" }
-                          );
-
-                          if (!sensorDataByType[time]) {
-                              sensorDataByType[time] = { time };
-                          }
-
-                          sensorDataByType[time][sensorType] = value;
-                      });
-                  } catch (err) {
-                      console.error(
-                          `Error fetching ${sensorType} for ${plantId}:`,
-                          err
-                      );
-                  }
-              }
-
-              // Convert merged object into array sorted by time
-              const mergedData = Object.values(sensorDataByType).sort(
-                  (a, b) =>
-                      new Date(`1970/01/01 ${a.time}`) -
-                      new Date(`1970/01/01 ${b.time}`)
-              );
-              allHistoricalData[plantId] = mergedData;
-          }
+      // 2. Fetch all sensor logs for this zone
+      let zoneLogs = [];
+      try {
+        const res = await api.get(`/logs/sensors?zoneId=${zoneId}&limit=1000`);
+        // If response is an array, use as is; if object, wrap in array
+        zoneLogs = Array.isArray(res.data) ? res.data : [res.data];
+      } catch (err) {
+        console.error(`Error fetching sensor logs for zone ${zoneId}:`, err);
+        continue;
       }
 
-      setHistoricalData(allHistoricalData);
+      // 3. For each plant, extract readings from zone logs
+      for (const plant of zonePlants) {
+        const plantId = plant.plantId;
+        const plantMoisturePin = String(plant.moisturePin);
+
+        // For each log entry (by timestamp), extract readings for this plant
+        const plantHistory = zoneLogs.map(log => {
+          // Find soil moisture for this plant's pin
+          let soilMoisture = null;
+          if (Array.isArray(log.soilMoistureByPin)) {
+            const pinData = log.soilMoistureByPin.find(
+              s => String(s.pin) === plantMoisturePin
+            );
+            soilMoisture = pinData ? pinData.soilMoisture : null;
+          }
+          return {
+            time: new Date(log.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            soilMoisture,
+            temperature: log.zoneSensors?.temp ?? null,
+            light: log.zoneSensors?.light ?? null,
+            humidity: log.zoneSensors?.humidity ?? null,
+            airQuality: log.zoneSensors?.airQuality ?? null,
+          };
+        });
+
+        allHistoricalData[plantId] = plantHistory;
+      }
+    }
+
+    setHistoricalData(allHistoricalData);
   };
   
   
@@ -419,10 +420,16 @@ const HistoricalData = () => {
 
       {/* Charts */}
       <div id="charts-export-area" className="space-y-6">
-        {['moisture', 'temperature', 'light', 'humidity'].map((key, chartIndex) => (
+        {sensorTypes.map((key, chartIndex) => (
           <div key={key} className="card">
             <h3 className="text-lg font-medium mb-4 capitalize">
-              {key === 'light' ? 'Light Intensity' : key.charAt(0).toUpperCase() + key.slice(1)}
+              {key === 'light'
+                ? 'Light Intensity'
+                : key === 'soilMoisture'
+                ? 'Moisture'
+                : key === 'airQuality'
+                ? 'Air Quality'
+                : key.charAt(0).toUpperCase() + key.slice(1)}
             </h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -433,35 +440,58 @@ const HistoricalData = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="time" />
                   <YAxis
-                    domain={key === 'temperature' ? [15, 35] : [0, 100]}
-                    tickFormatter={(value) => key === 'temperature' ? `${value}°C` : `${value}%`}
+                    domain={
+                      key === 'temperature'
+                        ? [15, 35]
+                        : key === 'airQuality'
+                        ? [0, 500] // Adjust as needed for your air quality sensor
+                        : [0, 100]
+                    }
+                    tickFormatter={(value) =>
+                      key === 'temperature'
+                        ? `${value}°C`
+                        : key === 'airQuality'
+                        ? value
+                        : `${value}%`
+                    }
                   />
                   <Tooltip
-                    formatter={(value) => [`${value}${key === 'temperature' ? '°C' : '%'}`, key]}
+                    formatter={(value) =>
+                      [
+                        `${value}${
+                          key === 'temperature'
+                            ? '°C'
+                            : key === 'airQuality'
+                            ? ''
+                            : '%'
+                        }`,
+                        key,
+                      ]
+                    }
                   />
                   <Legend />
                   {selectedPlant === 'all'
-  ? Object.keys(historicalData).map((plantId, index) => (
-      <Line
-        key={`${plantId}-${key}`}
-        type="monotone"
-        dataKey={`${plantId}-${key}`}
-        name={`${key.charAt(0).toUpperCase() + key.slice(1)} (${plantId})`}
-        stroke={plantColors[index % plantColors.length]} // ← This stays as-is
-        strokeWidth={2}
-        dot={{ r: 3 }}
-      />
-    ))
-  : <Line
-      type="monotone"
-      dataKey={key}
-      name={key.charAt(0).toUpperCase() + key.slice(1)}
-      stroke={metricColors[key]} // ✅ REPLACE with this line
-      strokeWidth={2}
-      dot={{ r: 3 }}
-    />
-}
-
+                    ? Object.keys(historicalData).map((plantId, index) => (
+                        <Line
+                          key={`${plantId}-${key}`}
+                          type="monotone"
+                          dataKey={`${plantId}-${key}`}
+                          name={`${key.charAt(0).toUpperCase() + key.slice(1)} (${plantId})`}
+                          stroke={plantColors[index % plantColors.length]}
+                          strokeWidth={2}
+                          dot={{ r: 3 }}
+                        />
+                      ))
+                    : (
+                      <Line
+                        type="monotone"
+                        dataKey={key}
+                        name={key === 'airQuality' ? 'Air Quality' : key.charAt(0).toUpperCase() + key.slice(1)}
+                        stroke={metricColors[key]}
+                        strokeWidth={2}
+                        dot={{ r: 3 }}
+                      />
+                    )}
                 </LineChart>
               </ResponsiveContainer>
             </div>
