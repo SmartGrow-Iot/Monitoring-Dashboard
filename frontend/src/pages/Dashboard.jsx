@@ -5,6 +5,7 @@ import WeatherCard from '../components/dashboard/WeatherCard';
 import ActivityLogCard from '../components/dashboard/ActivityLogCard';
 import Modal from '../components/ui/Modal';
 import api from '../api/api';
+import ZoneSection from '../components/zones/ZoneSection';
 
 const zoneIds = ['zone1', 'zone2', 'zone3', 'zone4'];
 const sensorTypes = ['soilMoisture', 'temperature', 'light', 'humidity'];
@@ -107,24 +108,29 @@ const Dashboard = () => {
     }
   };
 
+  // Group plants by zone
+  const plantsByZone = zoneIds.reduce((acc, zoneId) => {
+    acc[zoneId] = plants.filter(p => p.zone === zoneId);
+    return acc;
+  }, {});
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Main plant monitoring section */}
       <div className="lg:col-span-2 space-y-6">
         <h2 className="text-2xl font-semibold text-neutral-900">Plant Monitoring</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {plants.map(plant => (
-            <PlantCard
-              key={plant.plantId}
-              plant={{
-                ...plant,
-                id: plant.plantId,
-                lightLevel: plant.lightLevel,
-              }}
-              onEditThreshold={() => handleEditThreshold(plant)}
+        {zoneIds.map(zoneId => (
+          plantsByZone[zoneId] && plantsByZone[zoneId].length > 0 && (
+            <ZoneSection
+              key={zoneId}
+              zoneId={zoneId}
+              zoneName={zoneId.replace(/^zone/, 'Zone ')}
+              plants={plantsByZone[zoneId]}
+              onEditThreshold={handleEditThreshold}
+              // Optionally pass onEditPlant, onDeletePlant if you want those features
             />
-          ))}
-        </div>
+          )
+        ))}
         <ActivityLogCard />
       </div>
       {/* Right sidebar */}
