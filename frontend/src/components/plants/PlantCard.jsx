@@ -187,21 +187,17 @@ const PlantCard = ({ plant, onEditThreshold }) => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
         <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-  <div className="flex items-center justify-between">
-    {/* Group plant name and ID vertically */}
-    <div className="flex flex-col">
-      <h3 className="text-xl font-semibold">{plant.name}</h3>
-      <p className="text-sm text-white/80">{plant.id}</p>
-    </div>
-
-    {/* Status indicator stays to the right */}
-    <div className="flex items-center gap-2">
-      <span className={`h-3 w-3 rounded-full ${getStatusColor(plant.status)} animate-pulse-slow`}></span>
-      <span className="text-sm">{getStatusText(plant.status)}</span>
-    </div>
-  </div>
-</div>
-
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col">
+              <h3 className="text-xl font-semibold">{plant.name}</h3>
+              <p className="text-sm text-white/80">{plant.id}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`h-3 w-3 rounded-full ${getStatusColor(plant.status)} animate-pulse-slow`}></span>
+              <span className="text-sm">{getStatusText(plant.status)}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-4 gap-4 mb-6">
@@ -235,47 +231,6 @@ const PlantCard = ({ plant, onEditThreshold }) => {
           value={plant.airQuality !== undefined && plant.airQuality !== null ? `${plant.airQuality}` : 'N/A'}
           status="normal"
         />
-      </div>
-
-      <div className="flex flex-col gap-3">
-        {/* Water Pump as toggle */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Droplets size={18} className="text-accent" />
-            <span className="text-sm font-medium">Water Pump</span>
-          </div>
-          <Toggle
-            checked={pumpActive}
-            onChange={handlePumpToggle}
-            activeColor="bg-accent"
-          />
-        </div>
-
-        {/* Grow Lights toggle */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sun size={18} className="text-warning" />
-            <span className="text-sm font-medium">Grow Lights</span>
-          </div>
-          <Toggle
-            checked={lightsActive}
-            onChange={handleLightsToggle}
-            activeColor="bg-warning"
-          />
-        </div>
-
-        {/* Fan toggle */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Fan size={18} className="text-accent" />
-            <span className="text-sm font-medium">Fan</span>
-          </div>
-          <Toggle
-            checked={fanActive}
-            onChange={handleFanToggle}
-            activeColor="bg-blue-400"
-          />
-        </div>
       </div>
 
       <div className="mt-4 pt-4 border-t border-neutral-100 flex items-center justify-between text-sm text-neutral-500">
