@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Plane as Plant, BarChart2, Bell, Settings, X, Leaf } from 'lucide-react';
+import { Home, Plane as Plant, BarChart2, Bell, Settings, X, Leaf, BookOpen, Lightbulb } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const Sidebar = ({ currentRoute, setCurrentRoute, isOpen, onClose }) => {
@@ -12,6 +12,8 @@ const Sidebar = ({ currentRoute, setCurrentRoute, isOpen, onClose }) => {
     { id: 'history', label: 'Historical Data', icon: <BarChart2 size={20} />, path: '/history' },
     { id: 'alerts', label: 'Alerts', icon: <Bell size={20} />, path: '/alerts' },
     { id: 'settings', label: 'Settings', icon: <Settings size={20} />, path: '/settings' },
+    { id: 'resources', label: 'Resources', icon: <BookOpen size={20} />, path: '/resources'},
+    { id: 'plantinformation', label: 'Plant Information',  icon: <Lightbulb size={20} />, path: '/plantinformation' }
   ];
 
   const handleNavigation = (route, path) => {

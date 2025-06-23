@@ -23,8 +23,8 @@ const PromotionalMaterials = () => {
     training: {
       title: 'Training Video',
       description: 'Step-by-step video tutorials and guides',
-      content: '/resources/training-video.mp4',
-      downloadUrl: '/resources/training-video.mp4',
+      content: '/resources/SmartGrow Training Video.mp4',
+      downloadUrl: '/resources/SmartGrow Training Video.mp4',
       duration: '15 min',
       lastUpdated: '08-06-2025',
       keywords: ['training', 'tutorial', 'video', 'guide', 'learn']
@@ -32,8 +32,8 @@ const PromotionalMaterials = () => {
     slides: {
       title: 'Training Slides',
       description: 'Presentation slides for SmartGrow training sessions',
-      content: '/resources/training-slides.pdf',
-      downloadUrl: '/resources/training-slides.pdf',
+      content: '/resources/SmartGrow Training Slides.pdf',
+      downloadUrl: '/resources/SmartGrow Training Slides.pdf',
       lastUpdated: '08-06-2025',
       keywords: ['slides', 'training', 'presentation', 'pdf']
     }
@@ -124,14 +124,15 @@ const PromotionalMaterials = () => {
         {/* Preview Area */}
         <div className="bg-neutral-50 rounded-lg overflow-hidden" style={{ height: '70vh' }}>
           {activeTab === 'training' ? (
-            <video
-              controls
-              className="w-full h-full rounded-lg"
-              style={{ height: '100%' }}
-              src={resources[activeTab].content}
-            >
-              Your browser does not support the video tag.
-            </video>
+            <div className="flex justify-center items-center h-full bg-black">
+              <video
+                controls
+                className="w-full h-full object-contain"
+                src={resources[activeTab].content}
+              >
+                Your browser does not support the video tag.
+              </video>
+            </div>
           ) : activeTab === 'slides' ? (
             <iframe
               src={resources[activeTab].content}
@@ -154,3 +155,4 @@ const PromotionalMaterials = () => {
 };
 
 export default PromotionalMaterials;
+
