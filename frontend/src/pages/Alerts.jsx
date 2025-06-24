@@ -4,6 +4,69 @@ import api from '../api/api';
 
 const zoneIds = ['zone1', 'zone2', 'zone3', 'zone4'];
 
+export async function getAlertCount() {
+  const zoneIds = ['zone1', 'zone2', 'zone3', 'zone4'];
+  let systemThresholds = {};
+  try {
+    const sysRes = await api.get('/system/thresholds');
+    systemThresholds = sysRes.data.thresholds || sysRes.data;
+  } catch {}
+
+  let count = 0;
+
+  for (const zoneId of zoneIds) {
+    // 1. Fetch plants in zone
+    let plants = [];
+    try {
+      const res = await api.get(`/zones/${zoneId}/plants`);
+      plants = res.data.plants || [];
+    } catch {}
+
+    // 2. Fetch latest sensor log for zone
+    let zoneLog = null;
+    try {
+      const res = await api.get(`/logs/sensors?zoneId=${zoneId}&limit=1`);
+      zoneLog = Array.isArray(res.data) ? res.data[0] : res.data;
+    } catch {}
+
+    // 3. Zone-level alerts (temperature, airQuality, light)
+    if (zoneLog && zoneLog.zoneSensors) {
+      ['temperature', 'airQuality', 'light'].forEach(sensorType => {
+        const sensorKey = sensorType === 'temperature' ? 'temp' : sensorType;
+        const value = zoneLog.zoneSensors[sensorKey];
+        const threshold = systemThresholds[sensorType] || {};
+        if (value !== undefined && threshold.min !== undefined && threshold.max !== undefined) {
+          if (value < threshold.min || value > threshold.max) {
+            count++;
+          }
+        }
+      });
+    }
+
+    // 4. Plant-level alerts (moisture)
+    if (zoneLog && Array.isArray(zoneLog.soilMoistureByPin)) {
+      for (const plant of plants) {
+        // Fetch plant thresholds
+        let plantThreshold = {};
+        try {
+          const res = await api.get(`/plants/${plant.plantId}`);
+          plantThreshold = res.data.thresholds?.moisture || {};
+        } catch {}
+
+        const pinData = zoneLog.soilMoistureByPin.find(s => String(s.pin) === String(plant.moisturePin));
+        const value = pinData ? pinData.soilMoisture : undefined;
+        if (value !== undefined && plantThreshold.min !== undefined && plantThreshold.max !== undefined) {
+          if (value < plantThreshold.min || value > plantThreshold.max) {
+            count++;
+          }
+        }
+      }
+    }
+  }
+
+  return count;
+}
+
 const Alerts = () => {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);

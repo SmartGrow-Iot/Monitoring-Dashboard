@@ -1,10 +1,22 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Home, Plane as Plant, BarChart2, Bell, Settings, X, Leaf, BookOpen, Lightbulb } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { getAlertCount } from '../../pages/Alerts'; // <-- Import the alert count function
 
 const Sidebar = ({ currentRoute, setCurrentRoute, isOpen, onClose }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [alertCount, setAlertCount] = useState(0);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchCount = async () => {
+      const count = await getAlertCount();
+      if (mounted) setAlertCount(count);
+    };
+    fetchCount();
+    return () => { mounted = false; };
+  }, []);
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <Home size={20} />, path: '/dashboard' },
@@ -86,9 +98,9 @@ const Sidebar = ({ currentRoute, setCurrentRoute, isOpen, onClose }) => {
                 >
                   {item.icon}
                   <span>{item.label}</span>
-                  {item.id === 'alerts' && (
+                  {item.id === 'alerts' && alertCount > 0 && (
                     <span className="ml-auto px-2 py-0.5 text-xs font-medium bg-error/10 text-error rounded-full">
-                      2
+                      {alertCount}
                     </span>
                   )}
                 </button>

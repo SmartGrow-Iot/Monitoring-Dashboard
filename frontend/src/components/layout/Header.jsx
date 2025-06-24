@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Menu, Bell, User, LogOut, Settings as SettingsIcon } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Header = ({ onMenuClick, title, user, onLogout }) => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <header className="bg-white border-b border-neutral-200 shadow-sm">
@@ -25,6 +26,7 @@ const Header = ({ onMenuClick, title, user, onLogout }) => {
           <button
             className="p-2 rounded-lg text-neutral-500 hover:bg-neutral-100 relative"
             aria-label="View notifications"
+            onClick={() => navigate('/alerts')}
           >
             <Bell size={20} />
             {/* Notification indicator */}
