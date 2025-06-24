@@ -234,7 +234,7 @@ const ZoneSection = ({ zoneId, zoneName, plants, onEditThreshold, onEditPlant, o
           <Toggle 
             checked={zoneControls.fans} 
             onChange={() => handleControlToggle('fans')}
-            activeColor="bg-secondary"
+            activeColor="bg-purple-500"
           />
         </div>
       </div>
