@@ -138,14 +138,14 @@ const Dashboard = () => {
             />
           )
         ))}
-        <ActivityLogCard />
+        {/* <ActivityLogCard /> */}
       </div>
       {/* Right sidebar */}
       <div className="space-y-6">
         <h2 className="text-2xl font-semibold text-neutral-900">System Status</h2>
-        <SystemStatusCard />
+        {/* <SystemStatusCard /> */}
         <SystemThresholdCard /> {/* <-- Add this line to show the system thresholds card */}
-        <WeatherCard />
+        {/* <WeatherCard /> */}
       </div>
       {/* Edit Threshold Modal */}
       <Modal
