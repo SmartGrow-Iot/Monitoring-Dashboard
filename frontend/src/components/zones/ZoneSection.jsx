@@ -259,9 +259,9 @@ const ZoneSection = ({ zoneId, zoneName, plants, onEditThreshold, onEditPlant, o
       {/* Zone Info */}
       <div className="mt-4 pt-4 border-t border-neutral-100 flex items-center justify-between text-sm text-neutral-500">
         <span>Last updated: 2 minutes ago</span>
-        <button className="text-primary hover:text-primary-dark font-medium">
+        {/* <button className="text-primary hover:text-primary-dark font-medium">
           Manage Zone
-        </button>
+        </button> */}
       </div>
     </div>
   );

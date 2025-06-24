@@ -22,10 +22,7 @@ const PlantProfiles = () => {
     zone: '',
     moisturePin: '',
     thresholds: {
-      moisture: { min: 0, max: 0 },
-      temperature: { min: 0, max: 0 },
-      light: { min: 0, max: 0 },
-      airQuality: { min: 0, max: 0 } // changed from humidity
+      moisture: { min: 0, max: 0 }
     },
     careNotes: ''
   });
@@ -71,15 +68,16 @@ const PlantProfiles = () => {
     setIsEditModalOpen(true);
   };
 
+  // Edit handler: only allow editing moisture thresholds
   const handleSaveEdit = async (e) => {
     e.preventDefault();
     try {
       await api.put(
         `/plants/${editedPlant.plantId}/thresholds`,
-        editedPlant.thresholds
+        { moisture: editedPlant.thresholds.moisture }
       );
       setIsEditModalOpen(false);
-      fetchAllPlantProfiles(); // Now this is defined!
+      fetchAllPlantProfiles();
     } catch (err) {
       console.error("Failed to update thresholds", err);
     }
@@ -97,14 +95,11 @@ const PlantProfiles = () => {
     try {
       const requestBody = {
         name: newPlant.name,
-        userId: user?.uid || user?.email || 'unknown', // Use actual user info
+        userId: user?.uid || user?.email || 'unknown',
         zone: newPlant.zone,
         moisturePin: Number(newPlant.moisturePin),
         thresholds: {
-          moisture: { ...newPlant.thresholds.moisture },
-          temperature: { ...newPlant.thresholds.temperature },
-          light: { ...newPlant.thresholds.light },
-          airQuality: { ...newPlant.thresholds.airQuality }
+          moisture: { ...newPlant.thresholds.moisture }
         },
         type: 'vegetable',
         description: newPlant.careNotes,
@@ -121,15 +116,10 @@ const PlantProfiles = () => {
         zone: '',
         moisturePin: '',
         thresholds: {
-          moisture: { min: 0, max: 0 },
-          temperature: { min: 0, max: 0 },
-          light: { min: 0, max: 0 },
-          airQuality: { min: 0, max: 0 } // changed from humidity
+          moisture: { min: 0, max: 0 }
         },
         careNotes: ''
       });
-      // Refresh plant profiles
-      // (You may want to refetch or just add the new plant to state)
       setPlantProfiles(prev => [...prev, createdPlant]);
     } catch (err) {
       alert('Error adding plant: ' + (err.response?.data?.detail || JSON.stringify(err.response?.data) || err.message));
@@ -169,22 +159,10 @@ const PlantProfiles = () => {
             {/* Thresholds */}
             <div className="mb-4">
               <h4 className="text-sm font-medium text-neutral-700 mb-2">Threshold Settings</h4>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <div className="grid grid-cols-1 gap-x-4 gap-y-2 text-sm">
                 <div>
                   <p className="text-neutral-500">Moisture:</p>
                   <p>{plant.thresholds?.moisture?.min}% - {plant.thresholds?.moisture?.max}%</p>
-                </div>
-                <div>
-                  <p className="text-neutral-500">Temperature:</p>
-                  <p>{plant.thresholds?.temperature?.min}°C - {plant.thresholds?.temperature?.max}°C</p>
-                </div>
-                <div>
-                  <p className="text-neutral-500">Light:</p>
-                  <p>{plant.thresholds?.light?.min}% - {plant.thresholds?.light?.max}%</p>
-                </div>
-                <div>
-                  <p className="text-neutral-500">Air Quality:</p>
-                  <p>{plant.thresholds?.airQuality?.min}% - {plant.thresholds?.airQuality?.max}%</p>
                 </div>
               </div>
             </div>
@@ -257,38 +235,30 @@ const PlantProfiles = () => {
               />
             </div>
 
+            {/* Plant Info Section */}
+            <div className="grid grid-cols-1 gap-2 p-4 bg-neutral-50 rounded-lg">
+              <div>
+                <span className="text-sm text-neutral-500">Plant ID:</span>
+                <span className="ml-2 font-mono text-neutral-800">{selectedPlant.plantId}</span>
+              </div>
+              <div>
+                <span className="text-sm text-neutral-500">Moisture Pin:</span>
+                <span className="ml-2 font-mono text-neutral-800">{selectedPlant.moisturePin}</span>
+              </div>
+              <div>
+                <span className="text-sm text-neutral-500">Zone:</span>
+                <span className="ml-2 font-mono text-neutral-800">{selectedPlant.zone}</span>
+              </div>
+            </div>
+
             <div>
               <h4 className="font-medium text-neutral-900 mb-2">Threshold Settings</h4>
-              <div className="grid grid-cols-2 gap-4 p-4 bg-neutral-50 rounded-lg">
+              <div className="grid grid-cols-1 gap-4 p-4 bg-neutral-50 rounded-lg">
                 <div>
                   <p className="text-sm text-neutral-500">Moisture Range</p>
                   <p className="font-medium">
                     {selectedPlant?.thresholds?.moisture
                       ? `${selectedPlant.thresholds.moisture.min}% - ${selectedPlant.thresholds.moisture.max}%`
-                      : 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-neutral-500">Temperature Range</p>
-                  <p className="font-medium">
-                    {selectedPlant?.thresholds?.temperature
-                      ? `${selectedPlant.thresholds.temperature.min}°C - ${selectedPlant.thresholds.temperature.max}°C`
-                      : 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-neutral-500">Light Range</p>
-                  <p className="font-medium">
-                    {selectedPlant?.thresholds?.light
-                      ? `${selectedPlant.thresholds.light.min} - ${selectedPlant.thresholds.light.max}`
-                      : 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-neutral-500">Air Quality Range</p>
-                  <p className="font-medium">
-                    {selectedPlant?.thresholds?.airQuality
-                      ? `${selectedPlant.thresholds.airQuality.min}% - ${selectedPlant.thresholds.airQuality.max}%`
                       : 'N/A'}
                   </p>
                 </div>
@@ -333,7 +303,7 @@ const PlantProfiles = () => {
             <div className="space-y-3">
               <h4 className="font-medium text-neutral-900">Thresholds</h4>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div>
                   <label className="block text-sm text-neutral-700 mb-1">
                     Moisture Range (%)
@@ -367,135 +337,6 @@ const PlantProfiles = () => {
                             ...editedPlant.thresholds,
                             moisture: {
                               ...editedPlant.thresholds?.moisture,
-                              max: Number(e.target.value)
-                            }
-                          }
-                        })
-                      }
-                      className="w-20 rounded-md border border-neutral-300 px-2 py-1 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm text-neutral-700 mb-1">
-                    Temperature Range (°C)
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      value={editedPlant?.thresholds?.temperature?.min ?? ''}
-                      onChange={e =>
-                        setEditedPlant({
-                          ...editedPlant,
-                          thresholds: {
-                            ...editedPlant.thresholds,
-                            temperature: {
-                              ...editedPlant.thresholds?.temperature,
-                              min: Number(e.target.value)
-                            }
-                          }
-                        })
-                      }
-                      className="w-20 rounded-md border border-neutral-300 px-2 py-1 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
-                    <span className="text-neutral-500">to</span>
-                    <input
-                      type="number"
-                      value={editedPlant?.thresholds?.temperature?.max ?? ''}
-                      onChange={e =>
-                        setEditedPlant({
-                          ...editedPlant,
-                          thresholds: {
-                            ...editedPlant.thresholds,
-                            temperature: {
-                              ...editedPlant.thresholds?.temperature,
-                              max: Number(e.target.value)
-                            }
-                          }
-                        })
-                      }
-                      className="w-20 rounded-md border border-neutral-300 px-2 py-1 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm text-neutral-700 mb-1">
-                    Light Range (%)
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      value={editedPlant?.thresholds?.light?.min ?? ''}
-                      onChange={e =>
-                        setEditedPlant({
-                          ...editedPlant,
-                          thresholds: {
-                            ...editedPlant.thresholds,
-                            light: {
-                              ...editedPlant.thresholds?.light,
-                              min: Number(e.target.value)
-                            }
-                          }
-                        })
-                      }
-                      className="w-20 rounded-md border border-neutral-300 px-2 py-1 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
-                    <span className="text-neutral-500">to</span>
-                    <input
-                      type="number"
-                      value={editedPlant?.thresholds?.light?.max ?? ''}
-                      onChange={e =>
-                        setEditedPlant({
-                          ...editedPlant,
-                          thresholds: {
-                            ...editedPlant.thresholds,
-                            light: {
-                              ...editedPlant.thresholds?.light,
-                              max: Number(e.target.value)
-                            }
-                          }
-                        })
-                      }
-                      className="w-20 rounded-md border border-neutral-300 px-2 py-1 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm text-neutral-700 mb-1">
-                    Air Quality Range (%)
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      value={editedPlant?.thresholds?.airQuality?.min ?? ''}
-                      onChange={e =>
-                        setEditedPlant({
-                          ...editedPlant,
-                          thresholds: {
-                            ...editedPlant.thresholds,
-                            airQuality: {
-                              ...editedPlant.thresholds?.airQuality,
-                              min: Number(e.target.value)
-                            }
-                          }
-                        })
-                      }
-                      className="w-20 rounded-md border border-neutral-300 px-2 py-1 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
-                    <span className="text-neutral-500">to</span>
-                    <input
-                      type="number"
-                      value={editedPlant?.thresholds?.airQuality?.max ?? ''}
-                      onChange={e =>
-                        setEditedPlant({
-                          ...editedPlant,
-                          thresholds: {
-                            ...editedPlant.thresholds,
-                            airQuality: {
-                              ...editedPlant.thresholds?.airQuality,
                               max: Number(e.target.value)
                             }
                           }
@@ -611,11 +452,10 @@ const PlantProfiles = () => {
             />
           </div>
 
-          {/* Thresholds (unchanged) */}
+          {/* Thresholds (moisture only) */}
           <div className="space-y-3">
             <h4 className="font-medium text-neutral-900">Thresholds</h4>
-            
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-sm text-neutral-700 mb-1">
                   Moisture Range (%)
@@ -642,105 +482,6 @@ const PlantProfiles = () => {
                       thresholds: {
                         ...newPlant.thresholds,
                         moisture: { ...newPlant.thresholds.moisture, max: Number(e.target.value) }
-                      }
-                    })}
-                    className="w-20 rounded-md border border-neutral-300 px-2 py-1 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm text-neutral-700 mb-1">
-                  Temperature Range (°C)
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    value={newPlant.thresholds.temperature.min}
-                    onChange={(e) => setNewPlant({
-                      ...newPlant,
-                      thresholds: {
-                        ...newPlant.thresholds,
-                        temperature: { ...newPlant.thresholds.temperature, min: Number(e.target.value) }
-                      }
-                    })}
-                    className="w-20 rounded-md border border-neutral-300 px-2 py-1 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                  <span className="text-neutral-500">to</span>
-                  <input
-                    type="number"
-                    value={newPlant.thresholds.temperature.max}
-                    onChange={(e) => setNewPlant({
-                      ...newPlant,
-                      thresholds: {
-                        ...newPlant.thresholds,
-                        temperature: { ...newPlant.thresholds.temperature, max: Number(e.target.value) }
-                      }
-                    })}
-                    className="w-20 rounded-md border border-neutral-300 px-2 py-1 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm text-neutral-700 mb-1">
-                  Light Range (%)
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    value={newPlant.thresholds.light.min}
-                    onChange={(e) => setNewPlant({
-                      ...newPlant,
-                      thresholds: {
-                        ...newPlant.thresholds,
-                        light: { ...newPlant.thresholds.light, min: Number(e.target.value) }
-                      }
-                    })}
-                    className="w-20 rounded-md border border-neutral-300 px-2 py-1 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                  <span className="text-neutral-500">to</span>
-                  <input
-                    type="number"
-                    value={newPlant.thresholds.light.max}
-                    onChange={(e) => setNewPlant({
-                      ...newPlant,
-                      thresholds: {
-                        ...newPlant.thresholds,
-                        light: { ...newPlant.thresholds.light, max: Number(e.target.value) }
-                      }
-                    })}
-                    className="w-20 rounded-md border border-neutral-300 px-2 py-1 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm text-neutral-700 mb-1">
-                  Air Quality Range (%)
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    value={newPlant.thresholds.airQuality.min}
-                    onChange={(e) => setNewPlant({
-                      ...newPlant,
-                      thresholds: {
-                        ...newPlant.thresholds,
-                        airQuality: { ...newPlant.thresholds.airQuality, min: Number(e.target.value) }
-                      }
-                    })}
-                    className="w-20 rounded-md border border-neutral-300 px-2 py-1 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                  <span className="text-neutral-500">to</span>
-                  <input
-                    type="number"
-                    value={newPlant.thresholds.airQuality.max}
-                    onChange={(e) => setNewPlant({
-                      ...newPlant,
-                      thresholds: {
-                        ...newPlant.thresholds,
-                        airQuality: { ...newPlant.thresholds.airQuality, max: Number(e.target.value) }
                       }
                     })}
                     className="w-20 rounded-md border border-neutral-300 px-2 py-1 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"

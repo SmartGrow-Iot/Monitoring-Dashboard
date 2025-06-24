@@ -188,7 +188,12 @@ const metricColors = {
   airQuality: '#4CAF50',  // green (add this line)
 };
 
-
+function generateColorPalette(numColors) {
+  // Returns an array of unique HSL colors
+  return Array.from({ length: numColors }, (_, i) =>
+    `hsl(${Math.round((360 * i) / numColors)}, 70%, 50%)`
+  );
+}
 
 const HistoricalData = () => {
   const [selectedPlant, setSelectedPlant] = useState('all');
@@ -198,6 +203,18 @@ const HistoricalData = () => {
   const sensorTypes = ['soilMoisture', 'temperature', 'light', 'humidity', 'airQuality'];
   const [historicalData, setHistoricalData] = useState(mockHistoricalData);
   const plantColors = ['#1976D2', '#8BC34A', '#FF5722'];
+
+  // Get all plant IDs for the chart (excluding "all")
+  const plantIds = Object.keys(historicalData);
+
+  // Generate a unique color for each plant
+  const generatedPlantColors = generateColorPalette(plantIds.length);
+
+  // Map plantId to color
+  const plantColorMap = {};
+  plantIds.forEach((plantId, idx) => {
+    plantColorMap[plantId] = generatedPlantColors[idx];
+  });
 
   const chartData = (() => {
       // Collect all unique timestamps
@@ -216,8 +233,9 @@ const HistoricalData = () => {
       }
 
       const sortedTimes = Array.from(allTimestamps).sort(
-          (a, b) => new Date(`1970-01-01T${a}`) - new Date(`1970-01-01T${b}`)
-      );
+          (a, b) => new Date(`1970-01-01T${a}`) - new Date(`1970-01-01T${b}`))
+          .reverse(); // Sort in descending order
+      console.log("Sorted Times:", sortedTimes);
 
       return sortedTimes.map((time) => {
           const row = { time };
@@ -471,13 +489,13 @@ const HistoricalData = () => {
                   />
                   <Legend />
                   {selectedPlant === 'all'
-                    ? Object.keys(historicalData).map((plantId, index) => (
+                    ? plantIds.map((plantId) => (
                         <Line
                           key={`${plantId}-${key}`}
                           type="monotone"
                           dataKey={`${plantId}-${key}`}
                           name={`${key.charAt(0).toUpperCase() + key.slice(1)} (${plantId})`}
-                          stroke={plantColors[index % plantColors.length]}
+                          stroke={plantColorMap[plantId]}
                           strokeWidth={2}
                           dot={{ r: 3 }}
                         />
