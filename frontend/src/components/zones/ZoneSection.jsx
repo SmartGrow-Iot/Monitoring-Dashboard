@@ -5,44 +5,14 @@ import {
   Sun,
   ChevronDown,
   ChevronUp,
-  Wind
+  Wind,
+  Plus
 } from 'lucide-react';
 import PlantCard from '../plants/PlantCard';
 import SensorReading from '../ui/SensorReading';
 import Toggle from '../ui/Toggle';
 import api from '../../api/api';
 import { AuthContext } from '../../context/AuthContext';
-
-const getZoneAverages = (plants) => {
-  const total = plants.length;
-  if (total === 0) return { soilMoisture: 0, temperature: 0, lightLevel: 0, humidity: 0, airQuality: 0 };
-  const sum = plants.reduce(
-    (acc, p) => ({
-      soilMoisture: acc.soilMoisture + (p.soilMoisture ?? 0),
-      temperature: acc.temperature + (p.temperature ?? 0),
-      lightLevel: acc.lightLevel + (p.lightLevel ?? 0),
-      humidity: acc.humidity + (p.humidity ?? 0),
-      airQuality: acc.airQuality + (p.airQuality ?? 0),
-    }),
-    { soilMoisture: 0, temperature: 0, lightLevel: 0, humidity: 0, airQuality: 0 }
-  );
-  return {
-    soilMoisture: Math.round(sum.soilMoisture / total),
-    temperature: Math.round((sum.temperature / total) * 10) / 10,
-    lightLevel: Math.round(sum.lightLevel / total),
-    humidity: Math.round(sum.humidity / total),
-    airQuality: Math.round(sum.airQuality / total),
-  };
-};
-
-const getStatusColor = (status) => {
-  switch (status) {
-    case 'healthy': return 'bg-success';
-    case 'warning': return 'bg-warning';
-    case 'error': return 'bg-error';
-    default: return 'bg-neutral-400';
-  }
-};
 
 const getZoneStatus = (plants) => {
   const statuses = plants.map(p => p.status);
@@ -52,9 +22,11 @@ const getZoneStatus = (plants) => {
   return 'healthy';
 };
 
-const ZoneSection = ({ zoneId, zoneName, plants, onEditThreshold, onEditPlant, onDeletePlant, onAddPlant }) => {
+const ZoneSection = ({
+  zoneId, zoneName, plants, onEditThreshold, onEditPlant, onDeletePlant, onAddPlant,
+  refreshKey, onZoneRefresh
+}) => {
   const { user } = useContext(AuthContext);
-  const averages = getZoneAverages(plants);
   const zoneStatus = getZoneStatus(plants);
 
   const [expanded, setExpanded] = useState(true);
@@ -64,11 +36,22 @@ const ZoneSection = ({ zoneId, zoneName, plants, onEditThreshold, onEditPlant, o
     fans: false
   });
 
+  // State for zone1 sensor logs
+  const [zone1Sensors, setZone1Sensors] = useState({
+    temperature: null,
+    light: null,
+    humidity: null,
+    airQuality: null,
+  });
+
+  // Always use 'zone1' for fetch and post action logs
+  const hardcodedZoneId = 'zone1';
+
   // Fetch latest action logs for this zone to set initial toggle state
   useEffect(() => {
     const fetchZoneActions = async () => {
       try {
-        const res = await api.get(`/logs/action/zone/${zoneId}?sortBy=latest`);
+        const res = await api.get(`/logs/action/zone/${hardcodedZoneId}?sortBy=latest`);
         const logs = Array.isArray(res.data) ? res.data : [];
         // Find latest ON/OFF for each actuator type
         const getLatestState = (type, onAction, offAction) => {
@@ -85,7 +68,62 @@ const ZoneSection = ({ zoneId, zoneName, plants, onEditThreshold, onEditPlant, o
       }
     };
     fetchZoneActions();
-  }, [zoneId]);
+  }, [zoneId, refreshKey]);
+
+  // Fetch latest sensor logs for zone1 for avg temp, light, humidity, air quality
+  useEffect(() => {
+    const fetchZone1Sensors = async () => {
+      try {
+        const res = await api.get(`/logs/sensors?zoneId=zone1&limit=10`);
+        const logs = Array.isArray(res.data) ? res.data : [res.data];
+        // Calculate averages from the last 10 logs
+        let tempSum = 0, lightSum = 0, humiditySum = 0, airQualitySum = 0, count = 0;
+        logs.forEach(log => {
+          if (log.zoneSensors) {
+            tempSum += Number(log.zoneSensors.temp ?? 0);
+            lightSum += Number(log.zoneSensors.light ?? 0);
+            humiditySum += Number(log.zoneSensors.humidity ?? 0);
+            airQualitySum += Number(log.zoneSensors.airQuality ?? 0);
+            count++;
+          }
+        });
+        setZone1Sensors({
+          temperature: count ? Math.round((tempSum / count) * 10) / 10 : null,
+          light: count ? Math.round(lightSum / count) : null,
+          humidity: count ? Math.round(humiditySum / count) : null,
+          airQuality: count ? Math.round(airQualitySum / count) : null,
+        });
+      } catch (err) {
+        console.error('Failed to fetch zone1 sensor logs:', err);
+      }
+    };
+    fetchZone1Sensors();
+  }, [refreshKey]);
+
+  // Soil moisture average is still based on plants in this zone
+  const getSoilMoistureAvg = (plants) => {
+    const total = plants.length;
+    if (total === 0) return 0;
+    const sum = plants.reduce((acc, p) => acc + (p.soilMoisture ?? 0), 0);
+    return Math.round(sum / total);
+  };
+
+  const averages = {
+    soilMoisture: getSoilMoistureAvg(plants),
+    temperature: zone1Sensors.temperature ?? 0,
+    lightLevel: zone1Sensors.light ?? 0,
+    humidity: zone1Sensors.humidity ?? 0,
+    airQuality: zone1Sensors.airQuality ?? 0,
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'healthy': return 'bg-success';
+      case 'warning': return 'bg-warning';
+      case 'error': return 'bg-error';
+      default: return 'bg-neutral-400';
+    }
+  };
 
   // Toggle handler with API call (see previous answers for endpoint logic)
   const handleControlToggle = async (control) => {
@@ -111,18 +149,18 @@ const ZoneSection = ({ zoneId, zoneName, plants, onEditThreshold, onEditPlant, o
       endpoint = '/logs/action/fan';
     }
 
-    // Fetch actuatorId for this zone and type
+    // Fetch actuatorId for this zone and type (using hardcodedZoneId)
     let actuatorId = null;
     try {
-      const res = await api.get(`/actuators/zone/${zoneId}`);
+      const res = await api.get(`/actuators/zone/${hardcodedZoneId}`);
       const actuators = res.data?.actuators || [];
       const actuator = actuators.find(a => a.type === actuatorType);
       actuatorId = actuator?.actuatorId;
     } catch (err) {
-      console.error('Failed to fetch actuators for zone:', zoneId, err);
+      console.error('Failed to fetch actuators for zone:', hardcodedZoneId, err);
     }
 
-    // Post action log (no plantId, use "zone" not "zoneId")
+    // Post action log (always use hardcodedZoneId)
     try {
       const response = await api.post(endpoint, {
         action,
@@ -130,9 +168,10 @@ const ZoneSection = ({ zoneId, zoneName, plants, onEditThreshold, onEditPlant, o
         trigger: 'manual',
         triggerBy: user?.email || user?.name || 'unknown',
         timestamp: new Date().toISOString(),
-        zone: zoneId,
+        zone: hardcodedZoneId,
       });
-      console.log('Zone action log response:', response.data); // <-- Add this line
+      console.log('Zone action log response:', response.data);
+      if (onZoneRefresh) onZoneRefresh(); // <-- Add this line
     } catch (err) {
       console.error('Failed to log zone action:', err);
     }

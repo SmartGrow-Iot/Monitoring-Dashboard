@@ -15,6 +15,7 @@ const Dashboard = () => {
   const [plants, setPlants] = useState([]);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editedPlant, setEditedPlant] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0); // <-- Add refreshKey state
 
   // Fetch all plant profiles and their latest sensor readings
   const fetchAllPlantsAndSensors = async () => {
@@ -87,7 +88,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchAllPlantsAndSensors();
-  }, []);
+  }, [refreshKey]); // <-- Add refreshKey as a dependency
 
   // Edit threshold handlers
   const handleEditThreshold = (plant) => {
@@ -121,6 +122,10 @@ const Dashboard = () => {
     return acc;
   }, {});
 
+  const handleZoneRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Main plant monitoring section */}
@@ -134,6 +139,8 @@ const Dashboard = () => {
               zoneName={zoneId.replace(/^zone/, 'Zone ')}
               plants={plantsByZone[zoneId]}
               onEditThreshold={handleEditThreshold}
+              refreshKey={refreshKey}
+              onZoneRefresh={handleZoneRefresh}
               // Optionally pass onEditPlant, onDeletePlant if you want those features
             />
           )

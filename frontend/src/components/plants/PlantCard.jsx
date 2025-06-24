@@ -1,14 +1,11 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { Droplets, Fan, CloudDrizzle } from 'lucide-react';
+import { Droplets } from 'lucide-react';
 import SensorReading from '../ui/SensorReading';
 import api from '../../api/api';
 import { AuthContext } from '../../context/AuthContext';
 
 const PlantCard = ({ plant, onEditThreshold }) => {
   const { user } = useContext(AuthContext);
-  const [pumpActive, setPumpActive] = useState(false);
-  const [lightsActive, setLightsActive] = useState(false);
-  const [fanActive, setFanActive] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [plantDetails, setPlantDetails] = useState(null);
 
@@ -23,38 +20,6 @@ const PlantCard = ({ plant, onEditThreshold }) => {
       }
     };
     fetchPlantDetails();
-  }, [plant.plantId]);
-
-  useEffect(() => {
-    const fetchActionLogs = async () => {
-      try {
-        const res = await api.get(`/logs/action/plant/${plant.plantId}?sortBy=latest`);
-        const logs = res.data;
-
-        // Water Pump
-        const latestWater = logs.find(log =>
-          log.action === 'water_on' || log.action === 'water_off'
-        );
-        if (latestWater) setPumpActive(latestWater.action === 'water_on');
-
-        // Grow Lights
-        const latestLight = logs.find(log =>
-          log.action === 'light_on' || log.action === 'light_off'
-        );
-        if (latestLight) setLightsActive(latestLight.action === 'light_on');
-
-        // Fan
-        const latestFan = logs.find(log =>
-          log.action === 'fan_on' || log.action === 'fan_off'
-        );
-        if (latestFan) setFanActive(latestFan.action === 'fan_on');
-      } catch (err) {
-        console.error('Failed to fetch action logs:', err);
-      }
-    };
-
-    fetchActionLogs();
-    // eslint-disable-next-line
   }, [plant.plantId]);
 
   const getStatusColor = (status) => {

@@ -22,10 +22,10 @@ export async function getAlertCount() {
       plants = res.data.plants || [];
     } catch {}
 
-    // 2. Fetch latest sensor log for zone
+    // 2. Fetch latest sensor log for zone (always use zone1)
     let zoneLog = null;
     try {
-      const res = await api.get(`/logs/sensors?zoneId=${zoneId}&limit=1`);
+      const res = await api.get(`/logs/sensors?zoneId=zone1&limit=1`);
       zoneLog = Array.isArray(res.data) ? res.data[0] : res.data;
     } catch {}
 
@@ -92,10 +92,10 @@ const Alerts = () => {
           plants = res.data.plants || [];
         } catch {}
 
-        // 2. Fetch latest sensor log for zone
+        // 2. Fetch latest sensor log for zone (always use zone1)
         let zoneLog = null;
         try {
-          const res = await api.get(`/logs/sensors?zoneId=${zoneId}&limit=1`);
+          const res = await api.get(`/logs/sensors?zoneId=zone1&limit=1`);
           zoneLog = Array.isArray(res.data) ? res.data[0] : res.data;
         } catch {}
 

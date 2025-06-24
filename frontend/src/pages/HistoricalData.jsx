@@ -308,8 +308,9 @@ const HistoricalData = () => {
       // 2. Fetch all sensor logs for this zone
       let zoneLogs = [];
       try {
-        const res = await api.get(`/logs/sensors?zoneId=${zoneId}&limit=1000`);
-        // If response is an array, use as is; if object, wrap in array
+        // For all sensor readings except moisture, always use zone1
+        const sensorZoneId = zoneId === 'zone1' ? 'zone1' : 'zone1';
+        const res = await api.get(`/logs/sensors?zoneId=${sensorZoneId}&limit=1000`);
         zoneLogs = Array.isArray(res.data) ? res.data : [res.data];
       } catch (err) {
         console.error(`Error fetching sensor logs for zone ${zoneId}:`, err);
@@ -323,7 +324,7 @@ const HistoricalData = () => {
 
         // For each log entry (by timestamp), extract readings for this plant
         const plantHistory = zoneLogs.map(log => {
-          // Find soil moisture for this plant's pin
+          // Find soil moisture for this plant's pin (use the real zone's logs for moisture)
           let soilMoisture = null;
           if (Array.isArray(log.soilMoistureByPin)) {
             const pinData = log.soilMoistureByPin.find(
@@ -334,6 +335,7 @@ const HistoricalData = () => {
           return {
             time: new Date(log.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
             soilMoisture,
+            // All other sensor readings are always from zone1 logs
             temperature: log.zoneSensors?.temp ?? null,
             light: log.zoneSensors?.light ?? null,
             humidity: log.zoneSensors?.humidity ?? null,
