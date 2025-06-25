@@ -36,32 +36,34 @@ const ZoneSection = ({
     fans: false
   });
 
-  // State for zone1 sensor logs
-  const [zone1Sensors, setZone1Sensors] = useState({
+  // State for zone2 sensor logs (for temp, light, humidity, air quality)
+  const [zone2Sensors, setZone2Sensors] = useState({
     temperature: null,
     light: null,
     humidity: null,
     airQuality: null,
   });
 
-  // Always use 'zone1' for fetch and post action logs
-  const hardcodedZoneId = 'zone1';
-
-  // Fetch latest action logs for this zone to set initial toggle state
+  // Fetch latest action logs for actuators
   useEffect(() => {
     const fetchZoneActions = async () => {
+      // Water pump: use actual zoneId
+      // Grow lights & fans: use zone2
       try {
-        const res = await api.get(`/logs/action/zone/${hardcodedZoneId}?sortBy=latest`);
-        const logs = Array.isArray(res.data) ? res.data : [];
-        // Find latest ON/OFF for each actuator type
-        const getLatestState = (type, onAction, offAction) => {
+        // Water pump
+        const resWater = await api.get(`/logs/action/zone/${zoneId}?sortBy=latest`);
+        const logsWater = Array.isArray(resWater.data) ? resWater.data : [];
+        const getLatestState = (logs, onAction, offAction) => {
           const log = logs.find(l => l.action === onAction || l.action === offAction);
           return log ? log.action === onAction : false;
         };
+        // Grow lights & fans
+        const resOther = await api.get(`/logs/action/zone/zone2?sortBy=latest`);
+        const logsOther = Array.isArray(resOther.data) ? resOther.data : [];
         setZoneControls({
-          waterPump: getLatestState('watering', 'water_on', 'water_off'),
-          growLights: getLatestState('light', 'light_on', 'light_off'),
-          fans: getLatestState('fan', 'fan_on', 'fan_off'),
+          waterPump: getLatestState(logsWater, 'water_on', 'water_off'),
+          growLights: getLatestState(logsOther, 'light_on', 'light_off'),
+          fans: getLatestState(logsOther, 'fan_on', 'fan_off'),
         });
       } catch (err) {
         console.error('Failed to fetch zone action logs:', err);
@@ -70,11 +72,11 @@ const ZoneSection = ({
     fetchZoneActions();
   }, [zoneId, refreshKey]);
 
-  // Fetch latest sensor logs for zone1 for avg temp, light, humidity, air quality
+  // Fetch latest sensor logs for zone2 for avg temp, light, humidity, air quality
   useEffect(() => {
-    const fetchZone1Sensors = async () => {
+    const fetchZone2Sensors = async () => {
       try {
-        const res = await api.get(`/logs/sensors?zoneId=zone1&limit=10`);
+        const res = await api.get(`/logs/sensors?zoneId=zone2&limit=10`);
         const logs = Array.isArray(res.data) ? res.data : [res.data];
         // Calculate averages from the last 10 logs
         let tempSum = 0, lightSum = 0, humiditySum = 0, airQualitySum = 0, count = 0;
@@ -87,17 +89,17 @@ const ZoneSection = ({
             count++;
           }
         });
-        setZone1Sensors({
+        setZone2Sensors({
           temperature: count ? Math.round((tempSum / count) * 10) / 10 : null,
           light: count ? Math.round(lightSum / count) : null,
           humidity: count ? Math.round(humiditySum / count) : null,
           airQuality: count ? Math.round(airQualitySum / count) : null,
         });
       } catch (err) {
-        console.error('Failed to fetch zone1 sensor logs:', err);
+        console.error('Failed to fetch zone2 sensor logs:', err);
       }
     };
-    fetchZone1Sensors();
+    fetchZone2Sensors();
   }, [refreshKey]);
 
   // Soil moisture average is still based on plants in this zone
@@ -110,10 +112,10 @@ const ZoneSection = ({
 
   const averages = {
     soilMoisture: getSoilMoistureAvg(plants),
-    temperature: zone1Sensors.temperature ?? 0,
-    lightLevel: zone1Sensors.light ?? 0,
-    humidity: zone1Sensors.humidity ?? 0,
-    airQuality: zone1Sensors.airQuality ?? 0,
+    temperature: zone2Sensors.temperature ?? 0,
+    lightLevel: zone2Sensors.light ?? 0,
+    humidity: zone2Sensors.humidity ?? 0,
+    airQuality: zone2Sensors.airQuality ?? 0,
   };
 
   const getStatusColor = (status) => {
@@ -125,7 +127,7 @@ const ZoneSection = ({
     }
   };
 
-  // Toggle handler with API call (see previous answers for endpoint logic)
+  // Toggle handler with API call
   const handleControlToggle = async (control) => {
     const newState = !zoneControls[control];
     setZoneControls(prev => ({
@@ -134,33 +136,39 @@ const ZoneSection = ({
     }));
 
     // Map control to action, actuator type, and endpoint
-    let action, actuatorType, endpoint;
+    let action, actuatorType, endpoint, actuatorZoneId, payloadZoneId;
     if (control === 'waterPump') {
       action = newState ? 'water_on' : 'water_off';
       actuatorType = 'watering';
       endpoint = '/logs/action/water';
+      actuatorZoneId = zoneId;      // Use actual zoneId for actuator fetch
+      payloadZoneId = zoneId;       // Use actual zoneId in payload
     } else if (control === 'growLights') {
       action = newState ? 'light_on' : 'light_off';
       actuatorType = 'light';
       endpoint = '/logs/action/light';
+      actuatorZoneId = 'zone2';     // Always use zone2 for actuator fetch
+      payloadZoneId = 'zone2';      // Always use zone2 in payload
     } else if (control === 'fans') {
       action = newState ? 'fan_on' : 'fan_off';
       actuatorType = 'fan';
       endpoint = '/logs/action/fan';
+      actuatorZoneId = 'zone2';     // Always use zone2 for actuator fetch
+      payloadZoneId = 'zone2';      // Always use zone2 in payload
     }
 
-    // Fetch actuatorId for this zone and type (using hardcodedZoneId)
+    // Fetch actuatorId for this actuatorZoneId and type
     let actuatorId = null;
     try {
-      const res = await api.get(`/actuators/zone/${hardcodedZoneId}`);
+      const res = await api.get(`/actuators/zone/${actuatorZoneId}`);
       const actuators = res.data?.actuators || [];
       const actuator = actuators.find(a => a.type === actuatorType);
       actuatorId = actuator?.actuatorId;
     } catch (err) {
-      console.error('Failed to fetch actuators for zone:', hardcodedZoneId, err);
+      console.error('Failed to fetch actuators for zone:', actuatorZoneId, err);
     }
 
-    // Post action log (always use hardcodedZoneId)
+    // Post action log with correct payloadZoneId
     try {
       const response = await api.post(endpoint, {
         action,
@@ -168,10 +176,10 @@ const ZoneSection = ({
         trigger: 'manual',
         triggerBy: user?.email || user?.name || 'unknown',
         timestamp: new Date().toISOString(),
-        zone: hardcodedZoneId,
+        zone: payloadZoneId,
       });
       console.log('Zone action log response:', response.data);
-      if (onZoneRefresh) onZoneRefresh(); // <-- Add this line
+      if (onZoneRefresh) onZoneRefresh();
     } catch (err) {
       console.error('Failed to log zone action:', err);
     }

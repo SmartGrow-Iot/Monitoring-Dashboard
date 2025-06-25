@@ -23,17 +23,24 @@ export async function getAlertCount() {
     } catch {}
 
     // 2. Fetch latest sensor log for zone (always use zone1)
+    let zone2Log = null;
+    try {
+      const res = await api.get(`/logs/sensors?zoneId=zone2&limit=1`);
+      zone2Log = Array.isArray(res.data) ? res.data[0] : res.data;
+    } catch {}
+
+    // 2b. Fetch latest sensor log for this zone (for moisture)
     let zoneLog = null;
     try {
-      const res = await api.get(`/logs/sensors?zoneId=zone1&limit=1`);
+      const res = await api.get(`/logs/sensors?zoneId=${zoneId}&limit=1`);
       zoneLog = Array.isArray(res.data) ? res.data[0] : res.data;
     } catch {}
 
     // 3. Zone-level alerts (temperature, airQuality, light)
-    if (zoneLog && zoneLog.zoneSensors) {
+    if (zone2Log && zone2Log.zoneSensors) {
       ['temperature', 'airQuality', 'light'].forEach(sensorType => {
         const sensorKey = sensorType === 'temperature' ? 'temp' : sensorType;
-        const value = zoneLog.zoneSensors[sensorKey];
+        const value = zone2Log.zoneSensors[sensorKey];
         const threshold = systemThresholds[sensorType] || {};
         if (value !== undefined && threshold.min !== undefined && threshold.max !== undefined) {
           if (value < threshold.min || value > threshold.max) {
@@ -92,18 +99,25 @@ const Alerts = () => {
           plants = res.data.plants || [];
         } catch {}
 
-        // 2. Fetch latest sensor log for zone (always use zone1)
+        // 2a. Fetch latest sensor log for zone2 (for temp, airQuality, light)
+        let zone2Log = null;
+        try {
+          const res = await api.get(`/logs/sensors?zoneId=zone2&limit=1`);
+          zone2Log = Array.isArray(res.data) ? res.data[0] : res.data;
+        } catch {}
+
+        // 2b. Fetch latest sensor log for this zone (for moisture)
         let zoneLog = null;
         try {
-          const res = await api.get(`/logs/sensors?zoneId=zone1&limit=1`);
+          const res = await api.get(`/logs/sensors?zoneId=${zoneId}&limit=1`);
           zoneLog = Array.isArray(res.data) ? res.data[0] : res.data;
         } catch {}
 
         // 3. Zone-level alerts (temperature, airQuality, light)
-        if (zoneLog && zoneLog.zoneSensors) {
+        if (zone2Log && zone2Log.zoneSensors) {
           ['temperature', 'airQuality', 'light'].forEach(sensorType => {
             const sensorKey = sensorType === 'temperature' ? 'temp' : sensorType;
-            const value = zoneLog.zoneSensors[sensorKey];
+            const value = zone2Log.zoneSensors[sensorKey];
             const threshold = systemThresholds[sensorType] || {};
             if (value !== undefined && threshold.min !== undefined && threshold.max !== undefined) {
               if (value < threshold.min) {
