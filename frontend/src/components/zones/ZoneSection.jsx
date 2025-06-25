@@ -65,6 +65,11 @@ const ZoneSection = ({
           growLights: getLatestState(logsOther, 'light_on', 'light_off'),
           fans: getLatestState(logsOther, 'fan_on', 'fan_off'),
         });
+        console.log('Zone action logs fetched:', {
+          waterPump: getLatestState(logsWater, 'water_on', 'water_off'),
+          growLights: getLatestState(logsOther, 'light_on', 'light_off'),
+          fans: getLatestState(logsOther, 'fan_on', 'fan_off'),
+        });
       } catch (err) {
         console.error('Failed to fetch zone action logs:', err);
       }
@@ -170,14 +175,28 @@ const ZoneSection = ({
 
     // Post action log with correct payloadZoneId
     try {
-      const response = await api.post(endpoint, {
+      function getLocalTimeAsUtcFormat() {
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0'); // local time
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = '00'; // fixed seconds
+
+        return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}Z`;
+      }
+
+      const payload = {
         action,
         actuatorId,
         trigger: 'manual',
         triggerBy: user?.email || user?.name || 'unknown',
-        timestamp: new Date().toISOString(),
+        timestamp: getLocalTimeAsUtcFormat(),
         zone: payloadZoneId,
-      });
+      };
+
+      const response = await api.post(endpoint, payload);
       console.log('Zone action log response:', response.data);
       if (onZoneRefresh) onZoneRefresh();
     } catch (err) {
