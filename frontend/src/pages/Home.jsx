@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Plane as Plant, Droplets, LineChart, Bell, Leaf } from 'lucide-react';
+import { Plane as Plant, Droplets, LineChart, Bell } from 'lucide-react';
 import VideoTeaser from '../components/home/VideoTeaser';
 
 const Home = () => {
@@ -11,10 +11,14 @@ const Home = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center gap-2">
-              <div className="relative">
+              <div className="relative w-12 h-12">
                 <div className="absolute -inset-1 bg-gradient-to-r from-primary to-primary-light rounded-lg blur opacity-25"></div>
-                <div className="relative bg-white rounded-lg p-2">
-                  <Leaf size={24} className="text-primary" />
+                <div className="relative bg-white rounded-lg overflow-hidden w-full h-full">
+                  <img
+                    src="/Logo.jpg"
+                    alt="SmartGrow logo"
+                    className="w-full h-full object-contain"
+                  />
                 </div>
               </div>
               <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">
@@ -95,10 +99,13 @@ const Home = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Leaf size={24} className="text-primary-light" />
-                <span className="text-xl font-bold">SmartGrow</span>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-white rounded-lg overflow-hidden">
+                 <img src="/Logo.jpg" alt="SmartGrow logo" className="w-full h-full object-contain" />
               </div>
+              <span className="text-xl font-bold">SmartGrow</span>
+            </div>
+
               <p className="text-neutral-400">
                 Intelligent plant monitoring and care automation system.
               </p>
