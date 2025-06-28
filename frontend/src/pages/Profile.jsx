@@ -21,13 +21,13 @@ const Profile = () => {
           const ref = doc(db, 'users', user.uid);
           const snap = await getDoc(ref);
           if (snap.exists()) {
-            setFormData({
-              ...formData,
+            setFormData(prev => ({
+              ...prev,
               name: snap.data().name || user.name || '',
               email: snap.data().email || user.email || '',
               bio: snap.data().bio || '',
               notifications: snap.data().notifications || { email: true, push: true },
-            });
+            }));
             console.log('Profile loaded:', snap.data());
           } else {
             // Use AuthContext user as fallback and create Firestore doc
