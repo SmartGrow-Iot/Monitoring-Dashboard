@@ -6,6 +6,7 @@ import {
   ChevronDown,
   ChevronUp,
   Wind,
+  CloudFog,
   Plus
 } from 'lucide-react';
 import PlantCard from '../plants/PlantCard';
@@ -236,7 +237,7 @@ const ZoneSection = ({
           status={averages.lightLevel < 1900 ? 'low' : averages.lightLevel > 3800 ? 'high' : 'normal'}
         />
         <SensorReading 
-          icon={<Wind className="text-info" size={20} />}
+          icon={<CloudFog className="text-info" size={20} />}
           label="Avg Humidity"
           value={`${averages.humidity}%`}
           status={averages.humidity < 40 ? 'low' : averages.humidity > 75 ? 'high' : 'normal'}

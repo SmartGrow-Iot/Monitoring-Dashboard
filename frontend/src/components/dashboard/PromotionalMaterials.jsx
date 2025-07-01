@@ -15,9 +15,9 @@ const PromotionalMaterials = () => {
     manual: {
       title: 'User Manual',
       description: 'Complete guide to using SmartGrow system',
-      content: '/resources/user-manual.html',
-      downloadUrl: '/resources/user-manual.pdf',
-      lastUpdated: '08-06-2025',
+      content: '/resources/user-manual-v1.0.3.pdf',
+      downloadUrl: '/resources/user-manual-v1.0.3.pdf',
+      lastUpdated: '18-06-2025',
       keywords: ['manual', 'guide', 'documentation', 'user', 'help']
     },
     training: {
@@ -25,8 +25,8 @@ const PromotionalMaterials = () => {
       description: 'Step-by-step video tutorials and guides',
       content: '/resources/SmartGrow Training Video.mp4',
       downloadUrl: '/resources/SmartGrow Training Video.mp4',
-      duration: '15 min',
-      lastUpdated: '08-06-2025',
+      duration: '2.08 min',
+      lastUpdated: '18-06-2025',
       keywords: ['training', 'tutorial', 'video', 'guide', 'learn']
     },
     slides: {
@@ -34,7 +34,7 @@ const PromotionalMaterials = () => {
       description: 'Presentation slides for SmartGrow training sessions',
       content: '/resources/SmartGrow Training Slides.pdf',
       downloadUrl: '/resources/SmartGrow Training Slides.pdf',
-      lastUpdated: '08-06-2025',
+      lastUpdated: '18-06-2025',
       keywords: ['slides', 'training', 'presentation', 'pdf']
     }
   };
@@ -133,16 +133,16 @@ const PromotionalMaterials = () => {
                 Your browser does not support the video tag.
               </video>
             </div>
-          ) : activeTab === 'slides' ? (
+          ) : activeTab === 'manual' ? (
             <iframe
-              src={resources[activeTab].content}
+              src={`${resources[activeTab].content}#toolbar=1&navpanes=1&scrollbar=1&zoom=150`}
               className="w-full h-full rounded-lg"
               style={{ height: '100%' }}
               title={resources[activeTab].title}
             />
           ) : (
             <iframe
-              src={resources[activeTab].content}
+              src={`${resources[activeTab].content}#toolbar=1&navpanes=1&scrollbar=1&zoom=80`}
               className="w-full h-full rounded-lg"
               style={{ height: '100%' }}
               title={resources[activeTab].title}
@@ -155,4 +155,3 @@ const PromotionalMaterials = () => {
 };
 
 export default PromotionalMaterials;
-
